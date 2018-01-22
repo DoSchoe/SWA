@@ -9,7 +9,7 @@ namespace MyLib
     public class Project
     {
         private string mProjectName;
-        private TimeSpan mTimeEffortTarget;
+        private TimeSpan mTimeEffortProjected;
         private TimeSpan mTimeEffortCurrent;
     }
 }
