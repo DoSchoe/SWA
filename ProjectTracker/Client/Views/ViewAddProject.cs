@@ -33,9 +33,16 @@ namespace Client.Views
 
         private void btn_OK_Click(object sender, EventArgs e)
         {
-            //if (!tbx_ProjectName.Text.Contains("$"))
+            // read Input values
             projectName = tbx_ProjectName.Text;
             projectedTime = new TimeSpan(Convert.ToInt32(nud_projectedEffort.Value), 0, 0);
+        }
+
+        private void tbx_ProjectName_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            // Seperator kommt nicht vor
+            if (!e.KeyChar.ToString().Contains("$"))
+                e.Handled = true;
         }
     }
 }

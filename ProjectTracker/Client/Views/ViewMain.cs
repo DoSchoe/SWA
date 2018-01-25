@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Client.Controller;
 using Client.Views;
+using MyLib;
 
 namespace Client
 {
@@ -18,6 +19,7 @@ namespace Client
 
         private IController mController;
         private bool recording = false;
+        private Project currentProject;
         #endregion
         public ViewMain()
         {
@@ -36,7 +38,9 @@ namespace Client
 
         private void btn_Evaluate_Click(object sender, EventArgs e)
         {
-
+            // replace with actual current project
+            Project currentProject = new Project();
+            mController.evaluate(currentProject);
         }
 
         private void btn_Record_Click(object sender, EventArgs e)
@@ -44,14 +48,14 @@ namespace Client
             if (recording)
             {
                 btn_Record.Text = "Record";
-                //StopStopwatch
-                //ShowDialogCommit
+                mController.stopStopwatch();
+                mController.commitTime(currentProject.ProjectName);
                 recording = false;
             }
             else
             {
                 btn_Record.Text = "Stop";
-                //StartStopwatch
+                mController.startStopwatch();
                 recording = true;
             }
         }

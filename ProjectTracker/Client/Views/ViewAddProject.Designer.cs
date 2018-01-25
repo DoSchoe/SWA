@@ -88,6 +88,7 @@
             this.tbx_ProjectName.Name = "tbx_ProjectName";
             this.tbx_ProjectName.Size = new System.Drawing.Size(258, 20);
             this.tbx_ProjectName.TabIndex = 1;
+            this.tbx_ProjectName.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tbx_ProjectName_KeyPress);
             // 
             // btn_Cancel
             // 
