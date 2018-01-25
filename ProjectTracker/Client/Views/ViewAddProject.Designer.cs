@@ -32,9 +32,9 @@
             this.lb_ProjectedEffort = new System.Windows.Forms.Label();
             this.tlp_Evaluation = new System.Windows.Forms.TableLayoutPanel();
             this.tbx_ProjectName = new System.Windows.Forms.TextBox();
-            this.tbx_ProjectedEffort = new System.Windows.Forms.TextBox();
-            this.btn_OK = new System.Windows.Forms.Button();
             this.btn_Cancel = new System.Windows.Forms.Button();
+            this.btn_OK = new System.Windows.Forms.Button();
+            this.tbx_ProjectedEffort = new System.Windows.Forms.TextBox();
             this.tlp_Evaluation.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -86,12 +86,15 @@
             this.tbx_ProjectName.Size = new System.Drawing.Size(258, 20);
             this.tbx_ProjectName.TabIndex = 1;
             // 
-            // tbx_ProjectedEffort
+            // btn_Cancel
             // 
-            this.tbx_ProjectedEffort.Location = new System.Drawing.Point(93, 28);
-            this.tbx_ProjectedEffort.Name = "tbx_ProjectedEffort";
-            this.tbx_ProjectedEffort.Size = new System.Drawing.Size(65, 20);
-            this.tbx_ProjectedEffort.TabIndex = 1;
+            this.btn_Cancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            this.btn_Cancel.Location = new System.Drawing.Point(3, 63);
+            this.btn_Cancel.Name = "btn_Cancel";
+            this.btn_Cancel.Size = new System.Drawing.Size(84, 29);
+            this.btn_Cancel.TabIndex = 2;
+            this.btn_Cancel.Text = "Cancel";
+            this.btn_Cancel.UseVisualStyleBackColor = true;
             // 
             // btn_OK
             // 
@@ -104,15 +107,12 @@
             this.btn_OK.Text = "OK";
             this.btn_OK.UseVisualStyleBackColor = true;
             // 
-            // btn_Cancel
+            // tbx_ProjectedEffort
             // 
-            this.btn_Cancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btn_Cancel.Location = new System.Drawing.Point(3, 63);
-            this.btn_Cancel.Name = "btn_Cancel";
-            this.btn_Cancel.Size = new System.Drawing.Size(84, 29);
-            this.btn_Cancel.TabIndex = 2;
-            this.btn_Cancel.Text = "Cancel";
-            this.btn_Cancel.UseVisualStyleBackColor = true;
+            this.tbx_ProjectedEffort.Location = new System.Drawing.Point(93, 28);
+            this.tbx_ProjectedEffort.Name = "tbx_ProjectedEffort";
+            this.tbx_ProjectedEffort.Size = new System.Drawing.Size(65, 20);
+            this.tbx_ProjectedEffort.TabIndex = 1;
             // 
             // ViewAddProject
             // 

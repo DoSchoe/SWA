@@ -32,12 +32,12 @@
             this.lb_ProjectedEffort = new System.Windows.Forms.Label();
             this.lb_CurrentEffort = new System.Windows.Forms.Label();
             this.tlp_Evaluation = new System.Windows.Forms.TableLayoutPanel();
+            this.btn_Close = new System.Windows.Forms.Button();
             this.lb_Difference = new System.Windows.Forms.Label();
             this.tbx_ProjectName = new System.Windows.Forms.TextBox();
             this.tbx_ProjectedEffort = new System.Windows.Forms.TextBox();
             this.tbx_CurrentEffort = new System.Windows.Forms.TextBox();
             this.tbx_Difference = new System.Windows.Forms.TextBox();
-            this.btn_Close = new System.Windows.Forms.Button();
             this.tlp_Evaluation.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -94,6 +94,15 @@
             this.tlp_Evaluation.Size = new System.Drawing.Size(260, 161);
             this.tlp_Evaluation.TabIndex = 1;
             // 
+            // btn_Close
+            // 
+            this.btn_Close.Location = new System.Drawing.Point(133, 123);
+            this.btn_Close.Name = "btn_Close";
+            this.btn_Close.Size = new System.Drawing.Size(124, 35);
+            this.btn_Close.TabIndex = 2;
+            this.btn_Close.Text = "Close";
+            this.btn_Close.UseVisualStyleBackColor = true;
+            // 
             // lb_Difference
             // 
             this.lb_Difference.Location = new System.Drawing.Point(3, 75);
@@ -135,15 +144,6 @@
             this.tbx_Difference.Size = new System.Drawing.Size(124, 20);
             this.tbx_Difference.TabIndex = 1;
             // 
-            // btn_Close
-            // 
-            this.btn_Close.Location = new System.Drawing.Point(133, 123);
-            this.btn_Close.Name = "btn_Close";
-            this.btn_Close.Size = new System.Drawing.Size(124, 35);
-            this.btn_Close.TabIndex = 2;
-            this.btn_Close.Text = "Close";
-            this.btn_Close.UseVisualStyleBackColor = true;
-            // 
             // ViewEvaluation
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -170,6 +170,6 @@
         private System.Windows.Forms.TextBox tbx_ProjectedEffort;
         private System.Windows.Forms.TextBox tbx_CurrentEffort;
         private System.Windows.Forms.TextBox tbx_Difference;
-        private System.Windows.Forms.Button btn_Close;;
+        private System.Windows.Forms.Button btn_Close;
     }
 }
