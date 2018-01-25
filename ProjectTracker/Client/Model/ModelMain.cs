@@ -9,8 +9,10 @@ namespace Client.Model
 {
     class ModelMain:IModel
     {
-        private List<Project> mProjects;
+        public List<Project> mProjects;
         private Project mProjectCurrent;
         private DateTime mStartTime;
+
+
     }
 }

@@ -17,6 +17,7 @@ namespace Client
         #region Members
 
         private IController mController;
+        private bool recording = false;
         #endregion
         public ViewMain()
         {
@@ -26,6 +27,33 @@ namespace Client
         public void setController(IController controller)
         {
             mController = controller;
+        }
+
+        private void btn_AddProject_Click(object sender, EventArgs e)
+        {
+            mController.addProject();
+        }
+
+        private void btn_Evaluate_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btn_Record_Click(object sender, EventArgs e)
+        {
+            if (recording)
+            {
+                btn_Record.Text = "Record";
+                //StopStopwatch
+                //ShowDialogCommit
+                recording = false;
+            }
+            else
+            {
+                btn_Record.Text = "Stop";
+                //StartStopwatch
+                recording = true;
+            }
         }
     }
 }
