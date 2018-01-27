@@ -245,7 +245,7 @@ namespace Server
                             break;
 
                         case typeMessage.MSG_ADDTIME:
-                            Project tmp = msgClass.ParseDataToProject(typeMessage.MSG_ADDTIME, msgData);
+                            Project tmp = (msgClass.ParseDataToProjectList(typeMessage.MSG_ADDTIME, msgData))[0];
                             int i = FindProjectIndex(tmp);
                             if (-1 == i)
                             {

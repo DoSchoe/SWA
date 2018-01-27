@@ -126,28 +126,35 @@ namespace MyLib
             return tmp.ToString();
         }
 
-        public Project ParseDataToProject(typeMessage type, string data)
+        public List<Project> ParseDataToProjectList(typeMessage type, string data)
         {
+            string[] parts;
             switch (type)
             {
                 case typeMessage.MSG_CONNECT:
-                    return new Project();
+                    return new List<Project>();
                     break;
                 case typeMessage.MSG_NEWPROJECT:
-                    return new Project();
+                    return new List<Project>();
                     break;
                 case typeMessage.MSG_ADDTIME:
-                    string[] parts = data.Split(SEPdata);
-                    return new Project(parts[0],parts[1]);
+                    parts = data.Split(SEPdata);
+                    return new List<Project>() {new Project(parts[0], parts[1])};
                     break;
                 case typeMessage.MSG_UPDATE:
-                    return new Project();
+                    parts = data.Split(SEPdata);
+                    List<Project> tmp = new List<Project>();
+                    foreach (string part in parts)
+                    {
+                        tmp.Add(new Project(part));
+                    }
+                    return tmp;
                     break;
                 case typeMessage.MSG_HEARTBEAT:
-                    return new Project();
+                    return new List<Project>();
                     break;
                 default:
-                    return new Project();
+                    return new List<Project>();
                     break;
             }
         }
@@ -168,8 +175,11 @@ namespace MyLib
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
         }
-
-
+        
+        /// <summary>
+        /// Creates the response for a connect message.
+        /// </summary>
+        /// <returns></returns>
         public byte[] ConnectResponse()
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
@@ -179,6 +189,11 @@ namespace MyLib
             return tmp;
         }
 
+        /// <summary>
+        /// Creates a message for adding a new project
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
         public byte[] NewProjectMessage(Project data)
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
@@ -189,6 +204,10 @@ namespace MyLib
             return tmp;
         }
 
+        /// <summary>
+        /// Creates the response for a NewProject-message
+        /// </summary>
+        /// <returns></returns>
         public byte[] NewProjectResponse()
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
@@ -198,6 +217,12 @@ namespace MyLib
             return tmp;
         }
 
+        /// <summary>
+        /// Creates a message for adding time to a project
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
         public byte[] AddTimeMessage(Project data, TimeSpan time)
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
@@ -208,6 +233,10 @@ namespace MyLib
             return tmp;
         }
 
+        /// <summary>
+        /// Creates the response for a AddTime-message
+        /// </summary>
+        /// <returns></returns>
         public byte[] AddTimeResponse()
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
@@ -216,6 +245,11 @@ namespace MyLib
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
         }
+
+        /// <summary>
+        /// Creates a message if adding time to a project was failed.
+        /// </summary>
+        /// <returns></returns>
         public byte[] AddTimeResponseError()
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
@@ -225,6 +259,10 @@ namespace MyLib
             return tmp;
         }
 
+        /// <summary>
+        /// Creates a HeartBeat-message
+        /// </summary>
+        /// <returns></returns>
         public byte[] HeartBeatMessage()
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
@@ -234,6 +272,11 @@ namespace MyLib
             return tmp;
         }
 
+        /// <summary>
+        /// Creates a message for updating the project list.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
         public byte[] UpdateMessage(List<Project> data)
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
