@@ -14,17 +14,20 @@ using MyLib;
 namespace Server
 {
     delegate void Test();
+
     class Program
     {
-        delegate void AddProject();
         private const string PROJECT_FILE = @"c:\Temp\Projects.txt";
         private const int SERVER_PORT = 9050;
-        private const int HEARTBEAT_DELAY = 10000;
+        private const int HEARTBEAT_DELAY = 5000;
         private static List<Project> mProjects;
         private static List<IPEndPoint> mClients;
         private static bool Run = true;
-        private static int ProjectListHash;
+        private static int ProjectListHash = 0;
 
+        /// <summary>
+        /// Main method
+        /// </summary>
         static void Main()
         {
             mProjects = readFile();
@@ -32,13 +35,50 @@ namespace Server
             mClients = new List<IPEndPoint>();
             CreateThreads();
 
+            DisplayCommands();
             while (Run)
             {
-                Console.ReadKey();
-                Console.WriteLine("abc");
+                string cmd = Console.ReadLine();
+                //string cmd = "l";
+                switch (cmd)
+                {
+                    case "l":
+                        loadFile();
+                        break;
+                    case "s":
+                        saveFile();
+                        break;
+                    case "se":
+                        saveFile();
+                        Run = false;
+                        break;
+                    case "e":
+                        Run = false;
+                        break;
+                    default:
+                        Console.WriteLine("Wrong command!");
+                        DisplayCommands();
+                        break;
+                }
             }
         }
 
+        /// <summary>
+        /// Displays the possible commands
+        /// </summary>
+        private static void DisplayCommands()
+        {
+            Console.WriteLine("The folling commands a possible:");
+            Console.WriteLine("l  ...Reload the file. You will loose all unsaved changes.");
+            Console.WriteLine("s  ...Save the file.");
+            Console.WriteLine("se ...Save the file and close the application.");
+            Console.WriteLine("e  ...Close the application.");
+        }
+
+        /// <summary>
+        /// Reads a saved project file
+        /// </summary>
+        /// <returns>List of projects</returns>
         private static List<Project> readFile()
         {
             List<Project> tmp = new List<Project>();
@@ -51,6 +91,7 @@ namespace Server
                 {
                     tmp.Add(new Project(line));
                 }
+
                 sr.Close();
             }
             else
@@ -58,8 +99,29 @@ namespace Server
                 projects.Create();
             }
 
-            ProjectListHash = CalculateHash(tmp);
             return tmp;
+        }
+
+        /// <summary>
+        /// Loads the file again
+        /// </summary>
+        private static void loadFile()
+        {
+            mProjects.Clear();
+            mProjects = readFile();
+        }
+
+        /// <summary>
+        /// Saves the file
+        /// </summary>
+        private static void saveFile()
+        {
+            StreamWriter sw = new StreamWriter(PROJECT_FILE);
+            foreach (Project project in mProjects)
+            {
+                sw.WriteLine(project.ToString());
+            }
+            sw.Close();
         }
 
         /// <summary>
@@ -78,6 +140,10 @@ namespace Server
             return tmp.GetHashCode();
         }
 
+        /// <summary>
+        /// Displays all projects on the console
+        /// </summary>
+        /// <param name="projects"></param>
         private static void OutputProjects(List<Project> projects)
         {
             if (projects.Count == 0)
@@ -92,10 +158,16 @@ namespace Server
                 {
                     Console.WriteLine(project.ToString());
                 }
+
                 Console.WriteLine("====================\n");
             }
         }
 
+        /// <summary>
+        /// Finds a project in the list by its name
+        /// </summary>
+        /// <param name="reference"></param>
+        /// <returns></returns>
         private static int FindProjectIndex(Project reference)
         {
             foreach (Project p in mProjects)
@@ -109,12 +181,19 @@ namespace Server
             return -1;
         }
 
+        /// <summary>
+        /// Creates the different threads.
+        /// </summary>
         private static void CreateThreads()
         {
             ThreadPool.QueueUserWorkItem(new WaitCallback(ListenForClients));
             ThreadPool.QueueUserWorkItem(new WaitCallback(HeartBeat));
         }
 
+        /// <summary>
+        /// Listens for calls from the clients.
+        /// </summary>
+        /// <param name="stateInfo"></param>
         static void ListenForClients(Object stateInfo)
         {
             IPEndPoint server_Address = new IPEndPoint(IPAddress.Any, SERVER_PORT);
@@ -132,13 +211,13 @@ namespace Server
 
             server_TcpSocket.Listen(10);
 
-            while (true)
+            while (Run)
             {
                 //Blocking call for accepting requests.
                 Socket client_TcpSocket = server_TcpSocket.Accept();
 
                 //Address of the client:
-                IPEndPoint client_Address = (IPEndPoint)client_TcpSocket.RemoteEndPoint;
+                IPEndPoint client_Address = (IPEndPoint) client_TcpSocket.RemoteEndPoint;
 
                 receivedData = new byte[MyMessageClass.BUFFER_SIZE_BYTE];
                 dataCount = client_TcpSocket.Receive(receivedData);
@@ -156,6 +235,7 @@ namespace Server
                             {
                                 mClients.Add(client_Address);
                             }
+
                             response = msgClass.ConnectResponse();
                             break;
 
@@ -176,7 +256,7 @@ namespace Server
                             {
                                 response = msgClass.AddTimeResponseError();
                             }
-                            
+
                             break;
 
                         default:
@@ -186,41 +266,54 @@ namespace Server
                     // send response
                     client_TcpSocket.Send(response, response.Length, SocketFlags.None);
                 }
+
                 client_TcpSocket.Close();
             }
         }
+
+        /// <summary>
+        /// Sends an Update of the list or an heart beat in the defined intervall
+        /// </summary>
+        /// <param name="stateInfo"></param>
         static void HeartBeat(Object stateInfo)
         {
-            // message same for all
-            MyMessageClass msgClass = new MyMessageClass();
-            byte[] message;
-            if (ProjectListHash != CalculateHash(mProjects))
+            while (Run)
             {
-                message = msgClass.UpdateMessage(mProjects);
-            }
-            else
-            {
-                message = msgClass.HeartBeatMessage();
-            }
+                // message same for all
+                MyMessageClass msgClass = new MyMessageClass();
+                byte[] message;
+                if (ProjectListHash != CalculateHash(mProjects))
+                {
+                    message = msgClass.UpdateMessage(mProjects);
+                    ProjectListHash = CalculateHash(mProjects);
+                }
+                else
+                {
+                    message = msgClass.HeartBeatMessage();
+                }
 
-            foreach (IPEndPoint client in mClients)
-            {
-                IPEndPoint client_Address = new IPEndPoint(IPAddress.Parse(client.Address.ToString()),client.Port);
-                Socket client_Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                try
+                foreach (IPEndPoint client in mClients)
                 {
-                    client_Socket.Connect(client_Address);
+                    IPEndPoint client_Address = new IPEndPoint(IPAddress.Parse(client.Address.ToString()), client.Port);
+                    Socket client_Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    try
+                    {
+                        client_Socket.Connect(client_Address);
+                    }
+                    catch (SocketException e)
+                    {
+                        Console.WriteLine("Server: unable to connect to client for update/heart-beat!\n" + e.Message);
+                        continue;
+                    }
+
+                    client_Socket.Send(message);
+                    client_Socket.Shutdown(SocketShutdown.Both);
+                    client_Socket.Close();
                 }
-                catch (SocketException e)
-                {
-                    Console.WriteLine("Server: unable to connect to client for update/heart-beat!\n"+e.Message);
-                    continue;
-                }
-                client_Socket.Send(message);
-                client_Socket.Shutdown(SocketShutdown.Both);
-                client_Socket.Close();
+
+                //Console.WriteLine("HeartBeat");
+                Thread.Sleep(HEARTBEAT_DELAY);
             }
-            Thread.Sleep(HEARTBEAT_DELAY);
         }
     }
 }
