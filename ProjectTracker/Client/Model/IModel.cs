@@ -6,7 +6,4 @@ using System.Threading.Tasks;
 
 namespace Client.Model
 {
-    interface IModel
-    {
-    }
 }

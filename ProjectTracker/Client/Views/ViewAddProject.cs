@@ -41,7 +41,7 @@ namespace Client.Views
         private void tbx_ProjectName_KeyPress(object sender, KeyPressEventArgs e)
         {
             // Seperator kommt nicht vor
-            if (!e.KeyChar.ToString().Contains("$"))
+            if (e.KeyChar.ToString().Contains("$"))
                 e.Handled = true;
         }
     }
