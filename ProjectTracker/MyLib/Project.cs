@@ -42,6 +42,13 @@ namespace MyLib
             MTimeEffortCurrent = TimeSpan.Zero;
         }
 
+        public Project(string projectName, string currentTimeEffort)
+        {
+            mProjectName = projectName;
+            MTimeEffortProjected = TimeSpan.Zero;
+            MTimeEffortCurrent = StringToTimeSpan(currentTimeEffort);
+        }
+
         public Project(string projectString)
         {
             string[] parts = projectString.Split(SEPARATOR);
