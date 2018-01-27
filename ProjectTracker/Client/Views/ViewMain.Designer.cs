@@ -37,20 +37,24 @@
             // 
             // comboBox1
             // 
+            this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBox1.FormattingEnabled = true;
             this.comboBox1.Location = new System.Drawing.Point(12, 15);
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(201, 21);
             this.comboBox1.TabIndex = 0;
+            this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged);
             // 
             // btn_Record
             // 
+            this.btn_Record.Enabled = false;
             this.btn_Record.Location = new System.Drawing.Point(222, 12);
             this.btn_Record.Name = "btn_Record";
             this.btn_Record.Size = new System.Drawing.Size(50, 25);
             this.btn_Record.TabIndex = 1;
             this.btn_Record.Text = "Record";
             this.btn_Record.UseVisualStyleBackColor = true;
+            this.btn_Record.Click += new System.EventHandler(this.btn_Record_Click);
             // 
             // btn_AddProject
             // 
@@ -60,15 +64,18 @@
             this.btn_AddProject.TabIndex = 2;
             this.btn_AddProject.Text = "+";
             this.btn_AddProject.UseVisualStyleBackColor = true;
+            this.btn_AddProject.Click += new System.EventHandler(this.btn_AddProject_Click);
             // 
             // btn_Evaluate
             // 
+            this.btn_Evaluate.Enabled = false;
             this.btn_Evaluate.Location = new System.Drawing.Point(52, 42);
             this.btn_Evaluate.Name = "btn_Evaluate";
             this.btn_Evaluate.Size = new System.Drawing.Size(75, 23);
             this.btn_Evaluate.TabIndex = 3;
             this.btn_Evaluate.Text = "Evaluation";
             this.btn_Evaluate.UseVisualStyleBackColor = true;
+            this.btn_Evaluate.Click += new System.EventHandler(this.btn_Evaluate_Click);
             // 
             // statusStrip1
             // 

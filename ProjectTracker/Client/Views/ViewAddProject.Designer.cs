@@ -34,8 +34,10 @@
             this.tbx_ProjectName = new System.Windows.Forms.TextBox();
             this.btn_Cancel = new System.Windows.Forms.Button();
             this.btn_OK = new System.Windows.Forms.Button();
-            this.tbx_ProjectedEffort = new System.Windows.Forms.TextBox();
+            this.nud_projectedEffort = new System.Windows.Forms.NumericUpDown();
+            this.label1 = new System.Windows.Forms.Label();
             this.tlp_Evaluation.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nud_projectedEffort)).BeginInit();
             this.SuspendLayout();
             // 
             // lb_ProjectName
@@ -67,7 +69,8 @@
             this.tlp_Evaluation.Controls.Add(this.tbx_ProjectName, 1, 0);
             this.tlp_Evaluation.Controls.Add(this.btn_Cancel, 0, 3);
             this.tlp_Evaluation.Controls.Add(this.btn_OK, 2, 3);
-            this.tlp_Evaluation.Controls.Add(this.tbx_ProjectedEffort, 1, 1);
+            this.tlp_Evaluation.Controls.Add(this.nud_projectedEffort, 1, 1);
+            this.tlp_Evaluation.Controls.Add(this.label1, 2, 1);
             this.tlp_Evaluation.Location = new System.Drawing.Point(12, 12);
             this.tlp_Evaluation.Name = "tlp_Evaluation";
             this.tlp_Evaluation.RowCount = 4;
@@ -85,6 +88,7 @@
             this.tbx_ProjectName.Name = "tbx_ProjectName";
             this.tbx_ProjectName.Size = new System.Drawing.Size(258, 20);
             this.tbx_ProjectName.TabIndex = 1;
+            this.tbx_ProjectName.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tbx_ProjectName_KeyPress);
             // 
             // btn_Cancel
             // 
@@ -106,13 +110,29 @@
             this.btn_OK.TabIndex = 2;
             this.btn_OK.Text = "OK";
             this.btn_OK.UseVisualStyleBackColor = true;
+            this.btn_OK.Click += new System.EventHandler(this.btn_OK_Click);
             // 
-            // tbx_ProjectedEffort
+            // nud_projectedEffort
             // 
-            this.tbx_ProjectedEffort.Location = new System.Drawing.Point(93, 28);
-            this.tbx_ProjectedEffort.Name = "tbx_ProjectedEffort";
-            this.tbx_ProjectedEffort.Size = new System.Drawing.Size(65, 20);
-            this.tbx_ProjectedEffort.TabIndex = 1;
+            this.nud_projectedEffort.Location = new System.Drawing.Point(93, 28);
+            this.nud_projectedEffort.Maximum = new decimal(new int[] {
+            999999,
+            0,
+            0,
+            0});
+            this.nud_projectedEffort.Name = "nud_projectedEffort";
+            this.nud_projectedEffort.Size = new System.Drawing.Size(120, 20);
+            this.nud_projectedEffort.TabIndex = 4;
+            this.nud_projectedEffort.ThousandsSeparator = true;
+            // 
+            // label1
+            // 
+            this.label1.Location = new System.Drawing.Point(267, 25);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(84, 23);
+            this.label1.TabIndex = 0;
+            this.label1.Text = "hours";
+            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // ViewAddProject
             // 
@@ -126,6 +146,7 @@
             this.Text = "Add project";
             this.tlp_Evaluation.ResumeLayout(false);
             this.tlp_Evaluation.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nud_projectedEffort)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -136,8 +157,9 @@
         private System.Windows.Forms.Label lb_ProjectedEffort;
         private System.Windows.Forms.TableLayoutPanel tlp_Evaluation;
         private System.Windows.Forms.TextBox tbx_ProjectName;
-        private System.Windows.Forms.TextBox tbx_ProjectedEffort;
         private System.Windows.Forms.Button btn_OK;
         private System.Windows.Forms.Button btn_Cancel;
+        private System.Windows.Forms.NumericUpDown nud_projectedEffort;
+        private System.Windows.Forms.Label label1;
     }
 }

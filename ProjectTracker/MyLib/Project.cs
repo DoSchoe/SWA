@@ -94,6 +94,8 @@ namespace MyLib
         private string TimeSpanToString(TimeSpan time)
         {
             StringBuilder sb = new StringBuilder();
+            sb.Append(time.Days);
+            sb.Append(TIMESPANSEPARATOR);
             sb.Append(time.Hours);
             sb.Append(TIMESPANSEPARATOR);
             sb.Append(time.Minutes);
@@ -104,11 +106,12 @@ namespace MyLib
 
         private TimeSpan StringToTimeSpan(string time)
         {
-            int hours = Convert.ToInt32(time.Split(TIMESPANSEPARATOR)[0]);
-            int minutes = Convert.ToInt32(time.Split(TIMESPANSEPARATOR)[1]);
-            int seconds = Convert.ToInt32(time.Split(TIMESPANSEPARATOR)[2]);
+            int days = Convert.ToInt32(time.Split(TIMESPANSEPARATOR)[0]);
+            int hours = Convert.ToInt32(time.Split(TIMESPANSEPARATOR)[1]);
+            int minutes = Convert.ToInt32(time.Split(TIMESPANSEPARATOR)[2]);
+            int seconds = Convert.ToInt32(time.Split(TIMESPANSEPARATOR)[3]);
 
-            return new TimeSpan(hours, minutes, seconds);
+            return new TimeSpan(days, hours, minutes, seconds);
         }
         #endregion
     }

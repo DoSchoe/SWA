@@ -6,7 +6,4 @@ using System.Threading.Tasks;
 
 namespace Client.Controller
 {
-    public interface IController
-    {
-    }
 }
