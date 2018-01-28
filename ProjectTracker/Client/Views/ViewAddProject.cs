@@ -41,8 +41,29 @@ namespace Client.Views
         private void tbx_ProjectName_KeyPress(object sender, KeyPressEventArgs e)
         {
             // Seperator kommt nicht vor
-            if (e.KeyChar.ToString().Contains("$"))
+            if (e.KeyChar.ToString().Contains("$") || e.KeyChar.ToString().Contains("?") || e.KeyChar.ToString().Contains("#"))
                 e.Handled = true;
+        }
+
+        private void tbx_ProjectName_TextChanged(object sender, EventArgs e)
+        {
+            //Long enough
+            if (tbx_ProjectName.Text.Length > 4)
+                //List not empty
+                if (mController.GetProjects() != null)
+                {
+                    //No duplicate name
+                    if (mController.GetProjects().Where(p => p.ProjectName == tbx_ProjectName.Text).Count() == 0)
+                        btn_OK.Enabled = true;
+                    else
+                        btn_OK.Enabled = false;
+                }
+                //List is empty
+                else
+                    btn_OK.Enabled = true;
+            //Too short
+            else
+                btn_OK.Enabled = false;
         }
     }
 }

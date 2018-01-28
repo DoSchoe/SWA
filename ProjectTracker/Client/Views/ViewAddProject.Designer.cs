@@ -85,9 +85,11 @@
             // 
             this.tlp_Evaluation.SetColumnSpan(this.tbx_ProjectName, 2);
             this.tbx_ProjectName.Location = new System.Drawing.Point(93, 3);
+            this.tbx_ProjectName.MaxLength = 20;
             this.tbx_ProjectName.Name = "tbx_ProjectName";
             this.tbx_ProjectName.Size = new System.Drawing.Size(258, 20);
             this.tbx_ProjectName.TabIndex = 1;
+            this.tbx_ProjectName.TextChanged += new System.EventHandler(this.tbx_ProjectName_TextChanged);
             this.tbx_ProjectName.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tbx_ProjectName_KeyPress);
             // 
             // btn_Cancel
@@ -104,6 +106,7 @@
             // 
             this.btn_OK.AutoSize = true;
             this.btn_OK.DialogResult = System.Windows.Forms.DialogResult.OK;
+            this.btn_OK.Enabled = false;
             this.btn_OK.Location = new System.Drawing.Point(267, 63);
             this.btn_OK.Name = "btn_OK";
             this.btn_OK.Size = new System.Drawing.Size(84, 29);

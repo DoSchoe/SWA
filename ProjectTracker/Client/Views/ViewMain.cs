@@ -13,7 +13,7 @@ using MyLib;
 
 namespace Client
 {
-    public partial class ViewMain : Form, IView
+    public partial class ViewMain : Form, IViewMain
     {
         #region Members
 
@@ -24,17 +24,22 @@ namespace Client
         {
             InitializeComponent();
             //BindingSource bindingSource = new BindingSource();
+            //MessageBox.Show("BindingSource created");
             //bindingSource.DataSource = mController.mProjects;
-
-            //comboBox1.DataSource = bindingSource.DataSource;
-
-            //comboBox1.DisplayMember = "mProjectName";
-            //comboBox1.ValueMember = "mProjectName";
+            //MessageBox.Show("BindingDataSource set");
         }
 
         public void setController(IController controller)
         {
             mController = controller;
+        }
+
+        public void UpdateProjects(List<Project> projects)
+        {
+            comboBox1.DataSource = projects;
+            comboBox1.DisplayMember = "mProjectName";
+            comboBox1.ValueMember = "mProjectName";
+            MessageBox.Show("BoxDataSource set");
         }
 
         private void btn_AddProject_Click(object sender, EventArgs e)
@@ -44,7 +49,7 @@ namespace Client
 
         private void btn_Evaluate_Click(object sender, EventArgs e)
         {
-                mController.Evaluate();
+            mController.Evaluate();
         }
 
         private void btn_Record_Click(object sender, EventArgs e)
@@ -84,5 +89,7 @@ namespace Client
                 btn_Record.Enabled = false;
             }
         }
+
+
     }
 }

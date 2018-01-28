@@ -26,5 +26,6 @@ namespace Client
             IController cnt = new ControllerMain(_modelMain, _viewMain, _viewAddProject, _viewEvaluation);
             Application.Run(_viewMain);
         }
+
     }
 }
