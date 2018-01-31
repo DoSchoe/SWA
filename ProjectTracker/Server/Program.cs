@@ -13,8 +13,6 @@ using MyLib;
 
 namespace Server
 {
-    delegate void Test();
-
     class Program
     {
         private const string PROJECT_FILE = @"c:\Temp\Projects.txt";
@@ -30,6 +28,7 @@ namespace Server
         /// </summary>
         static void Main()
         {
+            ServerClass();
             mProjects = readFile();
             OutputProjects(mProjects);
             mClients = new List<IPEndPoint>();
