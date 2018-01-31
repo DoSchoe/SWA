@@ -2,14 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Client.Model;
-using Client.Views;
-using MyLib;
 using System.Diagnostics;
 using System.Windows.Forms;
 using System.Threading;
 using System.Net;
 using System.Net.Sockets;
+using System.ServiceModel;
+using Client.Model;
+using Client.Views;
+using MyLib;
 
 namespace Client.Controller
 {
@@ -17,6 +18,7 @@ namespace Client.Controller
     class ControllerMain : IController
     {
         private IModel mModelMain;
+        private IRemoteUpdate mRemoteUpdater;
         private ViewMain mViewMain;
         private ViewAddProject mViewAddProject;
         private ViewEvaluation mViewEvaluation;
@@ -38,7 +40,19 @@ namespace Client.Controller
             mViewMain.setController(this);
             mViewAddProject.setController(this);
             mViewEvaluation.setController(this);
+            CreateChannel();
             CreateThreads();
+#region TestInit
+            List<Project> NewList = new List<Project>();
+            Project projectToAdd1 = new Project("12345", new TimeSpan(1, 0, 0));
+            Project projectToAdd2 = new Project("23456", new TimeSpan(2, 0, 0));
+            Project projectToAdd3 = new Project("34567", new TimeSpan(3, 0, 0));
+            NewList.Add(projectToAdd1);
+            NewList.Add(projectToAdd2);
+            NewList.Add(projectToAdd3);
+            mModelMain.mProjects = NewList;
+            mViewMain.UpdateProjects(mModelMain.mProjects);
+#endregion
         }
 
         public void AddProject()
@@ -47,6 +61,8 @@ namespace Client.Controller
             if (mViewAddProject.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 Project projectToAdd = new Project(mViewAddProject.projectName, mViewAddProject.projectedTime);
+                mModelMain.mProjects.Add(projectToAdd);
+                mViewMain.UpdateProjects(mModelMain.mProjects);
                 QueueMessage(msgClass.NewProjectMessage(projectToAdd));
             }
         }
@@ -65,18 +81,20 @@ namespace Client.Controller
         public void CommitTime()
         {
             TimeSpan timeToAdd = mStopWatch.Elapsed;
-            DialogResult dialogResult = MessageBox.Show("Do you want to commit " + timeToAdd + " to project " + mModelMain.mCurrentProject.ProjectName, "Commit", MessageBoxButtons.YesNo);
+            DialogResult dialogResult = MessageBox.Show("Do you want to commit " + timeToAdd + " [hours:minutes:seconds] to project " + mModelMain.mCurrentProject.ProjectName, "Commit", MessageBoxButtons.YesNo);
             if (dialogResult == DialogResult.Yes)
             {
+                mModelMain.mCurrentProject.AddTime(timeToAdd);
+                mViewMain.UpdateProjects(mModelMain.mProjects);
                 QueueMessage(msgClass.AddTimeMessage(mModelMain.mCurrentProject, timeToAdd));
             }
         }
 
         public void Evaluate()
         {
-            //ViewEvaluation formEvaluation = new ViewEvaluation();
-            mViewEvaluation.Show();
-            mViewEvaluation.displayEvaluation(mModelMain.mCurrentProject);
+            ViewEvaluation formEvaluation = new ViewEvaluation();
+            formEvaluation.Show();
+            formEvaluation.displayEvaluation(mModelMain.mCurrentProject);
         }
 
         public void SetCurrentProject(Project project)
@@ -100,6 +118,20 @@ namespace Client.Controller
             else
             {
                 //write to logfile
+            }
+        }
+        private void CreateChannel()
+        {
+            try
+            {
+                // Connect to the service by using channel
+                ChannelFactory<IRemoteUpdate> cFactory = new ChannelFactory<IRemoteUpdate>("WSHttpBinding_IRemoteUpdate");
+                mRemoteUpdater = cFactory.CreateChannel();
+            }
+            catch (Exception e)
+            {
+                //Console.WriteLine(e);
+                throw;
             }
         }
 
@@ -163,38 +195,46 @@ namespace Client.Controller
             Socket client_TcpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             client_TcpSocket.Bind(client_Address);
             client_TcpSocket.Listen(10);
-            Socket server_TcpSocket = client_TcpSocket.Accept();
-
-            receivedData = new byte[MyMessageClass.BUFFER_SIZE_BYTE];
-            dataCount = server_TcpSocket.Receive(receivedData);
-            if (dataCount != 0)
+            while (true)
             {
-                receivedMsg = Encoding.ASCII.GetString(receivedData, 0, dataCount);
-                msgData = msgClass.getMessageData(receivedMsg);
-                msgHeader = msgClass.getMessageHeader(receivedMsg);
-                msgType = msgClass.getMessageType(msgHeader);
+                Socket server_TcpSocket = client_TcpSocket.Accept();
 
-                if (msgType == typeMessage.MSG_HEARTBEAT)
+                receivedData = new byte[MyMessageClass.BUFFER_SIZE_BYTE];
+                dataCount = server_TcpSocket.Receive(receivedData);
+                if (dataCount != 0)
                 {
-                    mHeartbeat.Restart();
-                    Connected = true;
+                    receivedMsg = Encoding.ASCII.GetString(receivedData, 0, dataCount);
+                    msgData = msgClass.getMessageData(receivedMsg);
+                    msgHeader = msgClass.getMessageHeader(receivedMsg);
+                    msgType = msgClass.getMessageType(msgHeader);
+
+                    if (msgType == typeMessage.MSG_HEARTBEAT)
+                    {
+                        mHeartbeat.Restart();
+                        Connected = true;
+                    }
+                    else if (msgType == typeMessage.MSG_UPDATE)
+                    {
+                        mHeartbeat.Restart();
+                        Connected = true;
+                        UpdateProjects();
+                    }
+                    else
+                    {
+                        throw new ArgumentOutOfRangeException();
+                    }
                 }
-                else if (msgType == typeMessage.MSG_UPDATE)
-                {
-                    mHeartbeat.Restart();
-                    Connected = true;
-                    // update mModelMain.mProjects
-                    mViewMain.UpdateProjects(mModelMain.mProjects);
-                }
-                else
-                {
-                    throw new ArgumentOutOfRangeException();
-                }
+                server_TcpSocket.Close();
+                if (mHeartbeat.ElapsedMilliseconds > TIMEOUT)
+                    Connected = false;
+                Thread.Sleep(100);
             }
-            server_TcpSocket.Close();
-            if (mHeartbeat.ElapsedMilliseconds > TIMEOUT)
-                Connected = false;
-            Thread.Sleep(100);
+        }
+
+        private void UpdateProjects()
+        {
+            mModelMain.mProjects = mRemoteUpdater.updatedProjectList();
+            mViewMain.UpdateProjects(mModelMain.mProjects);
         }
 
     }

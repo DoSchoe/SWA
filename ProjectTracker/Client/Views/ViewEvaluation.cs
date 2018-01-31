@@ -36,5 +36,10 @@ namespace Client.Views
             tbx_CurrentEffort.Text = projectToEvaluate.MTimeEffortCurrent.ToString();
             tbx_Difference.Text = (projectToEvaluate.MTimeEffortCurrent - projectToEvaluate.MTimeEffortProjected).ToString();
         }
+
+        private void btn_Close_Click(object sender, EventArgs e)
+        {
+            Close();
+        }
     }
 }

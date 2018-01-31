@@ -23,10 +23,6 @@ namespace Client
         public ViewMain()
         {
             InitializeComponent();
-            //BindingSource bindingSource = new BindingSource();
-            //MessageBox.Show("BindingSource created");
-            //bindingSource.DataSource = mController.mProjects;
-            //MessageBox.Show("BindingDataSource set");
         }
 
         public void setController(IController controller)
@@ -36,10 +32,9 @@ namespace Client
 
         public void UpdateProjects(List<Project> projects)
         {
-            comboBox1.DataSource = projects;
+            comboBox1.DataSource = null;
             comboBox1.DisplayMember = "mProjectName";
-            comboBox1.ValueMember = "mProjectName";
-            MessageBox.Show("BoxDataSource set");
+            comboBox1.DataSource = projects;
         }
 
         private void btn_AddProject_Click(object sender, EventArgs e)

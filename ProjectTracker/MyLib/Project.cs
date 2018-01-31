@@ -11,7 +11,7 @@ namespace MyLib
         private const char SEPARATOR = '$';
         private const char TIMESPANSEPARATOR = ':';
 
-        private string mProjectName;
+        public string mProjectName { get; set; }
         private TimeSpan mTimeEffortProjected;
         private TimeSpan mTimeEffortCurrent;
 
