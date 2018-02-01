@@ -90,14 +90,13 @@ namespace Server
             }
             else
             {
-                Console.WriteLine("CURRENT PROJECTS:");
-                Console.WriteLine("====================");
+                Console.WriteLine("CURRENT PROJECTS at the SERVER:");
+                Console.WriteLine("========================================");
                 foreach (Project project in projects)
                 {
                     Console.WriteLine(project.ToString());
                 }
-
-                Console.WriteLine("====================\n");
+                Console.WriteLine("========================================\n");
             }
         }
 

@@ -14,6 +14,7 @@ namespace Server
         private string PROJECT_FILE = @"c:\Temp\Projects.txt";
         private int SERVER_PORT = 9050;
         private int HEARTBEAT_DELAY = 5000;
+        public const char SEPdata = '#';
         private List<Project> mProjects;
         private List<IPEndPoint> mClients;
         private bool Run = true;
@@ -32,6 +33,19 @@ namespace Server
         public List<Project> GetProjectList()
         {
             return mProjects;
+        }
+
+        public string SendProjectList()
+        {
+            StringBuilder tmp = new StringBuilder();
+            tmp.Append(mProjects[0].ToString());
+            for (int i = 1; i < mProjects.Count; i++)
+            {
+                tmp.Append(SEPdata);
+                tmp.Append(mProjects[i].ToString());
+            }
+
+            return tmp.ToString();
         }
 
         public bool ListChanged()

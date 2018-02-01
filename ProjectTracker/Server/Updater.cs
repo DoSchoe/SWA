@@ -27,6 +27,11 @@ namespace Server
             return mServer.GetProjectList();
         }
 
+        public string updateProjectListAsString()
+        {
+            return mServer.SendProjectList();
+        }
+
         public void SetServer(ServerClass server)
         {
             mServer = server;

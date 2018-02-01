@@ -12,5 +12,8 @@ namespace MyLib
         /// <returns></returns>
         [OperationContract]
         List<Project> updatedProjectList();
+
+        [OperationContract]
+        string updateProjectListAsString();
     }
 }
