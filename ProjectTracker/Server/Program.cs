@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using System.ServiceModel;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,24 +16,27 @@ namespace Server
 {
     class Program
     {
-        private const string PROJECT_FILE = @"c:\Temp\Projects.txt";
         private const int SERVER_PORT = 9050;
         private const int HEARTBEAT_DELAY = 5000;
-        private static List<Project> mProjects;
-        private static List<IPEndPoint> mClients;
+        private static List<IPEndPoint> mClients = new List<IPEndPoint>();
         private static bool Run = true;
-        private static int ProjectListHash = 0;
+
+        private static ServerClass mServer;
+        private static Updater mUpdater;
 
         /// <summary>
         /// Main method
         /// </summary>
         static void Main()
         {
-            ServerClass();
-            mProjects = readFile();
-            OutputProjects(mProjects);
-            mClients = new List<IPEndPoint>();
-            CreateThreads();
+            mServer = new ServerClass();
+            //ThreadPool.QueueUserWorkItem(new WaitCallback(startServer));
+            ThreadPool.QueueUserWorkItem(new WaitCallback(startUpdater));
+                    
+            OutputProjects(mServer.GetProjectList());
+
+            ThreadPool.QueueUserWorkItem(new WaitCallback(ListenForClients));
+            ThreadPool.QueueUserWorkItem(new WaitCallback(HeartBeat));
 
             DisplayCommands();
             while (Run)
@@ -42,13 +46,13 @@ namespace Server
                 switch (cmd)
                 {
                     case "l":
-                        loadFile();
+                        mServer.LoadFile();
                         break;
                     case "s":
-                        saveFile();
+                        mServer.SaveFile();
                         break;
                     case "se":
-                        saveFile();
+                        mServer.SaveFile();
                         Run = false;
                         break;
                     case "e":
@@ -75,71 +79,6 @@ namespace Server
         }
 
         /// <summary>
-        /// Reads a saved project file
-        /// </summary>
-        /// <returns>List of projects</returns>
-        private static List<Project> readFile()
-        {
-            List<Project> tmp = new List<Project>();
-            FileInfo projects = new FileInfo(PROJECT_FILE);
-            if (projects.Exists)
-            {
-                StreamReader sr = new StreamReader(projects.FullName);
-                string line;
-                while ((line = sr.ReadLine()) != null)
-                {
-                    tmp.Add(new Project(line));
-                }
-
-                sr.Close();
-            }
-            else
-            {
-                projects.Create();
-            }
-
-            return tmp;
-        }
-
-        /// <summary>
-        /// Loads the file again
-        /// </summary>
-        private static void loadFile()
-        {
-            mProjects.Clear();
-            mProjects = readFile();
-        }
-
-        /// <summary>
-        /// Saves the file
-        /// </summary>
-        private static void saveFile()
-        {
-            StreamWriter sw = new StreamWriter(PROJECT_FILE);
-            foreach (Project project in mProjects)
-            {
-                sw.WriteLine(project.ToString());
-            }
-            sw.Close();
-        }
-
-        /// <summary>
-        /// Calculates a hash value for the list
-        /// </summary>
-        /// <param name="list"></param>
-        /// <returns></returns>
-        private static int CalculateHash(List<Project> list)
-        {
-            string tmp = list.Count.ToString();
-            foreach (Project p in list)
-            {
-                tmp = tmp + p.ProjectName + p.MTimeEffortCurrent.ToString() + p.MTimeEffortProjected.ToString();
-            }
-
-            return tmp.GetHashCode();
-        }
-
-        /// <summary>
         /// Displays all projects on the console
         /// </summary>
         /// <param name="projects"></param>
@@ -163,30 +102,22 @@ namespace Server
         }
 
         /// <summary>
-        /// Finds a project in the list by its name
+        /// Starts the WCF-Updater in a new thread.
         /// </summary>
-        /// <param name="reference"></param>
-        /// <returns></returns>
-        private static int FindProjectIndex(Project reference)
+        /// <param name="stateInfo"></param>
+        private static void startUpdater(Object stateInfo)
         {
-            foreach (Project p in mProjects)
+            while (mServer == null)
             {
-                if (p.ProjectName.Equals(reference.ProjectName))
-                {
-                    return mProjects.IndexOf(p);
-                }
+                
             }
-
-            return -1;
-        }
-
-        /// <summary>
-        /// Creates the different threads.
-        /// </summary>
-        private static void CreateThreads()
-        {
-            ThreadPool.QueueUserWorkItem(new WaitCallback(ListenForClients));
-            ThreadPool.QueueUserWorkItem(new WaitCallback(HeartBeat));
+            mUpdater = new Updater(mServer);
+            ServiceHost mValueExchangerServiceHost = new ServiceHost(mUpdater);
+            mValueExchangerServiceHost.Open();
+            while (Run)
+            { 
+            }
+            mValueExchangerServiceHost.Close();
         }
 
         /// <summary>
@@ -239,23 +170,20 @@ namespace Server
                             break;
 
                         case typeMessage.MSG_NEWPROJECT:
-                            mProjects.Add(new Project(msgData));
+                            mServer.AddProject(new Project(msgData));
                             response = msgClass.NewProjectResponse();
                             break;
 
                         case typeMessage.MSG_ADDTIME:
                             Project tmp = (msgClass.ParseDataToProjectList(typeMessage.MSG_ADDTIME, msgData))[0];
-                            int i = FindProjectIndex(tmp);
-                            if (-1 == i)
+                            if (mServer.UpdateTime(tmp))
                             {
-                                mProjects[i].AddTime(tmp.MTimeEffortCurrent);
                                 response = msgClass.AddTimeResponse();
                             }
                             else
                             {
                                 response = msgClass.AddTimeResponseError();
                             }
-
                             break;
 
                         default:
@@ -276,15 +204,16 @@ namespace Server
         /// <param name="stateInfo"></param>
         static void HeartBeat(Object stateInfo)
         {
+           
             while (Run)
             {
                 // message same for all
                 MyMessageClass msgClass = new MyMessageClass();
                 byte[] message;
-                if (ProjectListHash != CalculateHash(mProjects))
+                if(mServer.ListChanged())
                 {
-                    message = msgClass.UpdateMessage(mProjects);
-                    ProjectListHash = CalculateHash(mProjects);
+                    message = msgClass.UpdateMessage(mServer.GetProjectList());
+                    mServer.UpdateProjectListHash();
                 }
                 else
                 {
