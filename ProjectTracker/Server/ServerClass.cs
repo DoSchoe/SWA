@@ -60,6 +60,11 @@ namespace Server
             }
         }
 
+        public int GetProjectListHash()
+        {
+            return ProjectListHash;
+        }
+
         public void UpdateProjectListHash()
         {
             ProjectListHash = CalculateHash();
@@ -71,6 +76,7 @@ namespace Server
             if (-1 != i)
             {
                 mProjects[i].AddTime(project.MTimeEffortCurrent);
+                UpdateProjectListHash();
                 return true;
             }
             else
@@ -165,6 +171,7 @@ namespace Server
         public void AddProject(Project newProject)
         {
             mProjects.Add(newProject);
+            UpdateProjectListHash();
         }
     }
 }

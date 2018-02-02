@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define TestList
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,12 +25,13 @@ namespace Client.Controller
         private ViewAddProject mViewAddProject;
         private ViewEvaluation mViewEvaluation;
         private const int SERVER_PORT = 9050;
+        private const string SERVER_IP = "127.0.0.1";
         private const long TIMEOUT = 1000;
         private bool MessageWaiting;
         private bool Connected = false;
         private byte[] Message;
         private Stopwatch mStopWatch = new Stopwatch();
-        private MyMessageClass msgClass = new MyMessageClass();
+        private MyMessageClass msgClass;
 
         public ControllerMain(IModel modelMain, ViewMain viewMain, ViewAddProject viewAdd, ViewEvaluation viewEvaluation)
         {
@@ -36,23 +39,25 @@ namespace Client.Controller
             mViewMain = viewMain;
             mViewAddProject = viewAdd;
             mViewEvaluation = viewEvaluation;
-            mModelMain.mProjects = null;
             mViewMain.setController(this);
             mViewAddProject.setController(this);
             mViewEvaluation.setController(this);
+
+            ConnectToServer();
+
+
             CreateChannel();
             CreateThreads();
-#region TestInit
-            List<Project> NewList = new List<Project>();
-            Project projectToAdd1 = new Project("12345", new TimeSpan(1, 0, 0));
-            Project projectToAdd2 = new Project("23456", new TimeSpan(2, 0, 0));
-            Project projectToAdd3 = new Project("34567", new TimeSpan(3, 0, 0));
-            NewList.Add(projectToAdd1);
-            NewList.Add(projectToAdd2);
-            NewList.Add(projectToAdd3);
-            mModelMain.mProjects = NewList;
+
+#if TestList
+            mModelMain.mProjects = new List<Project>()
+            {
+                new Project("12345", new TimeSpan(1, 0, 0)),
+                new Project("23456", new TimeSpan(2, 0, 0)),
+                new Project("34567", new TimeSpan(3, 0, 0))
+            };
             mViewMain.UpdateProjects(mModelMain.mProjects);
-#endregion
+#endif
         }
 
         public void AddProject()
@@ -120,11 +125,11 @@ namespace Client.Controller
                 //write to logfile
             }
         }
+
         private void CreateChannel()
         {
             try
             {
-                // Connect to the service by using channel
                 ChannelFactory<IRemoteUpdate> cFactory = new ChannelFactory<IRemoteUpdate>("WSHttpBinding_IRemoteUpdate");
                 mRemoteUpdater = cFactory.CreateChannel();
             }
@@ -150,7 +155,7 @@ namespace Client.Controller
         /// <param name="stateInfo"></param>
         void SendMessages(Object stateInfo)
         {
-            MyMessageClass msgClass = new MyMessageClass();
+            MyMessageClass msgClass = new MyMessageClass(mModelMain.MyData.Number);
             IPEndPoint serverAddress = new IPEndPoint(IPAddress.Any, SERVER_PORT);
             Socket server_Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             while (true)
@@ -190,7 +195,7 @@ namespace Client.Controller
             string msgHeader;
             Stopwatch mHeartbeat = new Stopwatch();
             mHeartbeat.Start();
-            MyMessageClass msgClass = new MyMessageClass();
+            MyMessageClass msgClass = new MyMessageClass(mModelMain.MyData.Number);
             IPEndPoint client_Address = new IPEndPoint(IPAddress.Any, SERVER_PORT);
             Socket client_TcpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             client_TcpSocket.Bind(client_Address);
@@ -235,6 +240,87 @@ namespace Client.Controller
         {
             mModelMain.mProjects = mRemoteUpdater.updatedProjectList();
             mViewMain.UpdateProjects(mModelMain.mProjects);
+        }
+
+        private void ConnectToServer()
+        {
+            if (mModelMain.MyData.Status == ClientStati.NotConnected)
+            {
+                MyMessageClass msgClass = new MyMessageClass(mModelMain.MyData.Number);
+                byte[] dataToSend = msgClass.ConnectMessage(mModelMain.MyData, mModelMain.ProjectListHash);
+                string receivedMsg;
+                string msgHeader;
+                string msgData;
+                typeMessage msgType;
+                ClientData tmp;
+                try
+                {
+                    receivedMsg = sendToReceiveFromServer(dataToSend);
+
+                    msgHeader = msgClass.getMessageHeader(receivedMsg);
+                    msgData = msgClass.getMessageData(receivedMsg);
+                    msgType = msgClass.getMessageType(msgHeader);
+
+                    if (msgType != typeMessage.MSG_CONNECT)
+                    {
+                        throw new Exception("Wrong message type");
+                    }
+
+                    tmp = msgClass.ParseDataToClientData(msgType, msgData);
+
+                    if (tmp != mModelMain.MyData)
+                    {
+                        throw new Exception("Wrong client number/name!");
+                    }
+
+                    mModelMain.MyData = tmp;
+                    mModelMain.MyData.Status = ClientStati.Connected;
+                    //Update Statusbar
+                }
+                catch (Exception e)
+                {
+                    string msg = "Client: " + mModelMain.MyData.Number.ToString() + " (" + mModelMain.MyData.Name + ")\n" +
+                                 e.Message;
+                    MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+        /// <summary>
+        /// Sends a message and receive the response.
+        /// </summary>
+        /// <param name="dataToSend">Data to send as 'byte[]'</param>
+        /// <returns>The received message as 'string'.</returns>
+        private String sendToReceiveFromServer(byte[] dataToSend)
+        {
+            string receivedMessage = "";
+
+            IPEndPoint server_Address = new IPEndPoint(IPAddress.Parse(SERVER_IP), SERVER_PORT);
+            Socket server_TcpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            try
+            {
+                server_TcpSocket.Connect(server_Address);
+            }
+            catch (SocketException e)
+            {
+                throw new Exception("Unable to Connect to server!\n(" + e.Message + ")");
+            }
+            server_TcpSocket.Send(dataToSend);
+
+            // receive response and convert to string
+            int dataCount;
+            byte[] receivedData = new byte[MyMessageClass.BUFFER_SIZE_BYTE];
+
+            dataCount = server_TcpSocket.Receive(receivedData);
+
+            if (dataCount != 0)
+            {
+                receivedMessage = Encoding.ASCII.GetString(receivedData, 0, dataCount);
+                server_TcpSocket.Shutdown(SocketShutdown.Both); // only one side does this
+                server_TcpSocket.Close();
+            }
+
+            return receivedMessage;
         }
 
     }

@@ -16,7 +16,7 @@ namespace TestClient
         public const char SEPdata = '#';
         static void Main(string[] args)
         {
-
+            Console.WriteLine(System.Environment.MachineName);
             try
             {
                 // Connect to the service by using channel

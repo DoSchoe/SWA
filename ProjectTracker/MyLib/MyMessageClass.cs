@@ -5,7 +5,7 @@ using System.Text;
 
 namespace MyLib
 {
-    public enum typeMessage { MSG_CONNECT = 1, MSG_NEWPROJECT = 2, MSG_ADDTIME = 3, MSG_UPDATE = 4, MSG_HEARTBEAT = 5, MSG_ADDTIMEERROR};
+    public enum typeMessage { MSG_CONNECT = 1, MSG_DISCONNECT = 6, MSG_NEWPROJECT = 2, MSG_ADDTIME = 3, MSG_UPDATE = 4, MSG_HEARTBEAT = 5, MSG_ADDTIMEERROR = 99};
     public class MyMessageClass
     {
         #region Members
@@ -14,14 +14,15 @@ namespace MyLib
         public const char SEPmessage = '?';
         public const char SEPdata = '#';
 
-
+        private int myID;
         #endregion
 
         /// <summary>
         /// CTor
         /// </summary>
-        public MyMessageClass()
+        public MyMessageClass(int id)
         {
+            myID = id;
         }
 
         #region Message Methods
@@ -49,8 +50,20 @@ namespace MyLib
         public typeMessage getMessageType(string messageHeader)
         {
             typeMessage type;
-            type = convertMessageType(messageHeader);
+            string[] parts = messageHeader.Split(SEPdata);
+            type = convertMessageType(parts[0]);
             return type;
+        }
+
+        /// <summary>
+        /// Returns the ID of the client.
+        /// </summary>
+        /// <param name="messageHeader">The header of a message as 'string'.</param>
+        /// <returns>The ID of the client as 'int'.</returns>
+        public int getClientID(string messageHeader)
+        {
+            string[] parts = messageHeader.Split(SEPdata);
+            return Convert.ToInt32(parts[1]);
         }
 
         /// <summary>
@@ -91,7 +104,7 @@ namespace MyLib
         /// <returns>The header as 'string'.</returns>
         private string createMsgHeader(typeMessage type)
         {
-            return ((int)type).ToString();
+            return ((int)type).ToString() + SEPdata + myID.ToString();
         }
         #endregion
 
@@ -126,20 +139,16 @@ namespace MyLib
             return tmp.ToString();
         }
 
+
+
         public List<Project> ParseDataToProjectList(typeMessage type, string data)
         {
             string[] parts;
             switch (type)
             {
-                case typeMessage.MSG_CONNECT:
-                    return new List<Project>();
-                    break;
-                case typeMessage.MSG_NEWPROJECT:
-                    return new List<Project>();
-                    break;
                 case typeMessage.MSG_ADDTIME:
                     parts = data.Split(SEPdata);
-                    return new List<Project>() {new Project(parts[0], parts[1])};
+                    return new List<Project>() { new Project(parts[0], parts[1]) };
                     break;
                 case typeMessage.MSG_UPDATE:
                     parts = data.Split(SEPdata);
@@ -150,11 +159,29 @@ namespace MyLib
                     }
                     return tmp;
                     break;
-                case typeMessage.MSG_HEARTBEAT:
-                    return new List<Project>();
-                    break;
                 default:
                     return new List<Project>();
+                    break;
+            }
+        }
+
+        public ClientData ParseDataToClientData(typeMessage type, string data)
+        {
+            string[] parts;
+            switch (type)
+            {
+                case typeMessage.MSG_CONNECT:
+                    parts = data.Split(SEPdata);                  
+                    return new ClientData(parts[1], (ClientStati)Convert.ToInt32(parts[2]));
+                    break;
+                case typeMessage.MSG_HEARTBEAT:
+                    parts = data.Split(SEPdata);
+                    ClientData tmp = new ClientData(parts[1], (ClientStati)Convert.ToInt32(parts[2]));
+                    tmp.Number = Convert.ToInt32(parts[0]);
+                    return tmp;
+                    break;
+                default:
+                    return null;
                     break;
             }
         }
@@ -166,29 +193,44 @@ namespace MyLib
         /// Creates a connect message.
         /// </summary>
         /// <returns>The connection message as 'byte[]'.</returns>
-        public byte[] ConnectMessage()
+        public byte[] ConnectMessage(ClientData sender, int hashValueList)
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
             string msgHeader = createMsgHeader(typeMessage.MSG_CONNECT);
-            string msgData = "";
+            string msgData = createConnectData(sender, hashValueList);
             string msg = msgHeader + SEPmessage + msgData;
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
         }
-        
+        private string createConnectData(ClientData data, int hashvalue)
+        {
+            StringBuilder tmp = new StringBuilder();
+            tmp.Append(data.Number);
+            tmp.Append(SEPdata);
+            tmp.Append(data.Name);
+            tmp.Append(SEPdata);
+            tmp.Append(data.Status);
+            tmp.Append(SEPdata);
+            tmp.Append(hashvalue.ToString());
+            return tmp.ToString();
+        }
+
         /// <summary>
         /// Creates the response for a connect message.
         /// </summary>
         /// <returns></returns>
-        public byte[] ConnectResponse()
+        public byte[] ConnectResponse(ClientData receiver, int hashValueList)
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
             string msgHeader = createMsgHeader(typeMessage.MSG_CONNECT);
-            string msg = msgHeader + SEPmessage + "Connected";
+            string msgData = createConnectData(receiver, hashValueList);
+            string msg = msgHeader + SEPmessage + msgData;
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
         }
+        #endregion
 
+        #region New project message
         /// <summary>
         /// Creates a message for adding a new project
         /// </summary>
@@ -208,15 +250,17 @@ namespace MyLib
         /// Creates the response for a NewProject-message
         /// </summary>
         /// <returns></returns>
-        public byte[] NewProjectResponse()
+        public byte[] NewProjectResponse(int hashValueList)
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
             string msgHeader = createMsgHeader(typeMessage.MSG_NEWPROJECT);
-            string msg = msgHeader + SEPmessage + "NewProjectAdded";
+            string msg = msgHeader + SEPmessage + hashValueList.ToString();
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
         }
+        #endregion
 
+        #region Add time message
         /// <summary>
         /// Creates a message for adding time to a project
         /// </summary>
@@ -237,11 +281,11 @@ namespace MyLib
         /// Creates the response for a AddTime-message
         /// </summary>
         /// <returns></returns>
-        public byte[] AddTimeResponse()
+        public byte[] AddTimeResponse(int hashValueList)
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
             string msgHeader = createMsgHeader(typeMessage.MSG_ADDTIME);
-            string msg = msgHeader + SEPmessage + "TimeAdded";
+            string msg = msgHeader + SEPmessage + hashValueList.ToString();
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
         }
@@ -258,30 +302,48 @@ namespace MyLib
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
         }
+        #endregion
 
+        #region Heart-Beat message
         /// <summary>
         /// Creates a HeartBeat-message
         /// </summary>
         /// <returns></returns>
-        public byte[] HeartBeatMessage()
+        public byte[] HeartBeatMessage(ClientData sender, int hashValueList)
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
             string msgHeader = createMsgHeader(typeMessage.MSG_HEARTBEAT);
-            string msg = msgHeader + SEPmessage + "HeartBeat";
+            string msgData = createConnectData(sender, hashValueList);
+            string msg = msgHeader + SEPmessage + msgData;
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
         }
 
         /// <summary>
+        /// Creates the response for a connect message.
+        /// </summary>
+        /// <returns></returns>
+        public byte[] HeartBeatResponse(int hashValueList)
+        {
+            byte[] tmp = new byte[BUFFER_SIZE_BYTE];
+            string msgHeader = createMsgHeader(typeMessage.MSG_CONNECT);;
+            string msg = msgHeader + SEPmessage + hashValueList.ToString();
+            tmp = Encoding.ASCII.GetBytes(msg);
+            return tmp;
+        }
+        #endregion
+
+        #region Update message
+        /// <summary>
         /// Creates a message for updating the project list.
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public byte[] UpdateMessage(List<Project> data)
+        public byte[] UpdateResponse(ClientData receiver, int hashValueList)
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
             string msgHeader = createMsgHeader(typeMessage.MSG_UPDATE);
-            string msgData = createMsgData(data);
+            string msgData = createConnectData(receiver, hashValueList);
             string msg = msgHeader + SEPmessage + msgData;
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;

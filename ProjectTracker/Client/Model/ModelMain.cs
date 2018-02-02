@@ -9,7 +9,26 @@ namespace Client.Model
 {
     class ModelMain:IModel
     {
+        private ClientData mMyData;
         public List<Project> mProjects { get; set; }
+        private int mProjectListHash;
         public Project mCurrentProject { get; set; }
+        public ClientData MyData
+        {
+            get => mMyData;
+            set => mMyData = value;
+        }
+        public int ProjectListHash
+        {
+            get => mProjectListHash;
+            set => mProjectListHash = value;
+        }
+
+        public ModelMain()
+        {
+            mMyData = new ClientData(System.Environment.MachineName, ClientStati.NotStarted);
+            mProjects = new List<Project>();
+            ProjectListHash = 0;
+        }
     }
 }

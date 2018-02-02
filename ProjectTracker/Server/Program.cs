@@ -18,7 +18,8 @@ namespace Server
     {
         private const int SERVER_PORT = 9050;
         private const int HEARTBEAT_DELAY = 5000;
-        private static List<IPEndPoint> mClients = new List<IPEndPoint>();
+        private const int SERVER_ID = -99;
+        private static List<ClientData> mClients = new List<ClientData>();
         private static bool Run = true;
 
         private static ServerClass mServer;
@@ -30,13 +31,10 @@ namespace Server
         static void Main()
         {
             mServer = new ServerClass();
-            //ThreadPool.QueueUserWorkItem(new WaitCallback(startServer));
-            ThreadPool.QueueUserWorkItem(new WaitCallback(startUpdater));
-                    
             OutputProjects(mServer.GetProjectList());
 
             ThreadPool.QueueUserWorkItem(new WaitCallback(ListenForClients));
-            ThreadPool.QueueUserWorkItem(new WaitCallback(HeartBeat));
+            ThreadPool.QueueUserWorkItem(new WaitCallback(startUpdater));
 
             DisplayCommands();
             while (Run)
@@ -96,6 +94,7 @@ namespace Server
                 {
                     Console.WriteLine(project.ToString());
                 }
+
                 Console.WriteLine("========================================\n");
             }
         }
@@ -108,14 +107,16 @@ namespace Server
         {
             while (mServer == null)
             {
-                
+
             }
+
             mUpdater = new Updater(mServer);
             ServiceHost mValueExchangerServiceHost = new ServiceHost(mUpdater);
             mValueExchangerServiceHost.Open();
             while (Run)
-            { 
+            {
             }
+
             mValueExchangerServiceHost.Close();
         }
 
@@ -125,121 +126,87 @@ namespace Server
         /// <param name="stateInfo"></param>
         static void ListenForClients(Object stateInfo)
         {
-            IPEndPoint server_Address = new IPEndPoint(IPAddress.Any, SERVER_PORT);
-            Socket server_TcpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            server_TcpSocket.Bind(server_Address);
-
-            byte[] receivedData;
-            int dataCount;
-            string receivedMsg;
-            typeMessage msgType;
-            string msgData;
-            string msgHeader;
-            MyMessageClass msgClass = new MyMessageClass(); //-1... Server
-            byte[] response = new byte[MyMessageClass.BUFFER_SIZE_BYTE];
-
-            server_TcpSocket.Listen(10);
-
-            while (Run)
+            Socket server_TcpSocket = null;
+            try
             {
-                //Blocking call for accepting requests.
-                Socket client_TcpSocket = server_TcpSocket.Accept();
+                IPEndPoint server_Address = new IPEndPoint(IPAddress.Any, SERVER_PORT);
+                server_TcpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                server_TcpSocket.Bind(server_Address);
 
-                //Address of the client:
-                IPEndPoint client_Address = (IPEndPoint) client_TcpSocket.RemoteEndPoint;
+                byte[] receivedData;
+                int dataCount;
+                string receivedMsg;
+                typeMessage msgType;
+                string msgData;
+                string msgHeader;
+                MyMessageClass msgClass = new MyMessageClass(SERVER_ID); //-99... Server
+                byte[] response = new byte[MyMessageClass.BUFFER_SIZE_BYTE];
 
-                receivedData = new byte[MyMessageClass.BUFFER_SIZE_BYTE];
-                dataCount = client_TcpSocket.Receive(receivedData);
-                if (dataCount != 0)
+                server_TcpSocket.Listen(10);
+
+                while (Run)
                 {
-                    receivedMsg = Encoding.ASCII.GetString(receivedData, 0, dataCount);
-                    msgHeader = msgClass.getMessageHeader(receivedMsg);
-                    msgData = msgClass.getMessageData(receivedMsg);
-                    msgType = msgClass.getMessageType(msgHeader);
+                    //Blocking call for accepting requests.
+                    Socket client_TcpSocket = server_TcpSocket.Accept();
 
-                    switch (msgType)
+                    //Address of the client:
+                    IPEndPoint client_Address = (IPEndPoint) client_TcpSocket.RemoteEndPoint;
+
+                    receivedData = new byte[MyMessageClass.BUFFER_SIZE_BYTE];
+                    dataCount = client_TcpSocket.Receive(receivedData);
+                    if (dataCount != 0)
                     {
-                        case typeMessage.MSG_CONNECT:
-                            if (!mClients.Contains(client_Address))
-                            {
-                                mClients.Add(client_Address);
-                            }
+                        receivedMsg = Encoding.ASCII.GetString(receivedData, 0, dataCount);
+                        msgHeader = msgClass.getMessageHeader(receivedMsg);
+                        msgData = msgClass.getMessageData(receivedMsg);
+                        msgType = msgClass.getMessageType(msgHeader);
 
-                            response = msgClass.ConnectResponse();
-                            break;
+                        switch (msgType)
+                        {
+                            case typeMessage.MSG_CONNECT:
+                                ClientData connectClient = msgClass.ParseDataToClientData(msgType, msgData);
+                                connectClient.Number = mClients.Count;
+                                connectClient.Address = client_Address;
+                                connectClient.Status = ClientStati.Connected;
+                                mClients.Add(connectClient);
+                                response = msgClass.ConnectResponse(connectClient, mServer.GetProjectListHash());
+                                break;
 
-                        case typeMessage.MSG_NEWPROJECT:
-                            mServer.AddProject(new Project(msgData));
-                            response = msgClass.NewProjectResponse();
-                            break;
+                            case typeMessage.MSG_NEWPROJECT:
+                                mServer.AddProject(new Project(msgData));
+                                response = msgClass.NewProjectResponse(mServer.GetProjectListHash());
+                                break;
 
-                        case typeMessage.MSG_ADDTIME:
-                            Project tmp = (msgClass.ParseDataToProjectList(typeMessage.MSG_ADDTIME, msgData))[0];
-                            if (mServer.UpdateTime(tmp))
-                            {
-                                response = msgClass.AddTimeResponse();
-                            }
-                            else
-                            {
-                                response = msgClass.AddTimeResponseError();
-                            }
-                            break;
+                            case typeMessage.MSG_ADDTIME:
+                                Project tmp = (msgClass.ParseDataToProjectList(typeMessage.MSG_ADDTIME, msgData))[0];
+                                response = mServer.UpdateTime(tmp) ? msgClass.AddTimeResponse(mServer.GetProjectListHash()) : msgClass.AddTimeResponseError();
+                                break;
 
-                        default:
-                            throw new ArgumentOutOfRangeException();
+                            case typeMessage.MSG_HEARTBEAT:
+ 
+                                    response = msgClass.HeartBeatResponse(mServer.GetProjectListHash());
+
+                                break;
+
+
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
+
+                        // send response
+                        client_TcpSocket.Send(response, response.Length, SocketFlags.None);
                     }
 
-                    // send response
-                    client_TcpSocket.Send(response, response.Length, SocketFlags.None);
+                    client_TcpSocket.Close();
                 }
-
-                client_TcpSocket.Close();
             }
-        }
-
-        /// <summary>
-        /// Sends an Update of the list or an heart beat in the defined intervall
-        /// </summary>
-        /// <param name="stateInfo"></param>
-        static void HeartBeat(Object stateInfo)
-        {
-           
-            while (Run)
+            catch (Exception e)
             {
-                // message same for all
-                MyMessageClass msgClass = new MyMessageClass();
-                byte[] message;
-                if(mServer.ListChanged())
-                {
-                    message = msgClass.UpdateMessage(mServer.GetProjectList());
-                    mServer.UpdateProjectListHash();
-                }
-                else
-                {
-                    message = msgClass.HeartBeatMessage();
-                }
-
-                foreach (IPEndPoint client in mClients)
-                {
-                    IPEndPoint client_Address = new IPEndPoint(IPAddress.Parse(client.Address.ToString()), client.Port);
-                    Socket client_Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                    try
-                    {
-                        client_Socket.Connect(client_Address);
-                    }
-                    catch (SocketException e)
-                    {
-                        Console.WriteLine("Server: unable to connect to client for update/heart-beat!\n" + e.Message);
-                        continue;
-                    }
-
-                    client_Socket.Send(message);
-                    client_Socket.Shutdown(SocketShutdown.Both);
-                    client_Socket.Close();
-                }
-
-                //Console.WriteLine("HeartBeat");
-                Thread.Sleep(HEARTBEAT_DELAY);
+                Console.WriteLine("Error:\n" + e.Message);
+            }
+            finally
+            {
+                server_TcpSocket.Close();
             }
         }
     }
