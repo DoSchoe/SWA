@@ -43,8 +43,8 @@ namespace Client.Controller
             mViewAddProject.setController(this);
             mViewEvaluation.setController(this);
 
-            ConnectToServer();
-
+            if (mModelMain.MyData.Status == ClientStati.NotConnected)
+                ConnectToServer();
 
             CreateChannel();
             CreateThreads();
@@ -115,7 +115,7 @@ namespace Client.Controller
         private void QueueMessage(byte[] message)
         {
             MessageBox.Show(System.Text.Encoding.Default.GetString(message));
-            if (Connected)
+            if (mModelMain.MyData.Status == ClientStati.Connected)
             {
                 Message = message;
                 MessageWaiting = true;
@@ -135,7 +135,9 @@ namespace Client.Controller
             }
             catch (Exception e)
             {
-                //Console.WriteLine(e);
+                string msg = "Client: " + mModelMain.MyData.Number.ToString() + " (" + mModelMain.MyData.Name + ")\n" +
+                             e.Message;
+                MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 throw;
             }
         }
@@ -156,28 +158,73 @@ namespace Client.Controller
         void SendMessages(Object stateInfo)
         {
             MyMessageClass msgClass = new MyMessageClass(mModelMain.MyData.Number);
-            IPEndPoint serverAddress = new IPEndPoint(IPAddress.Any, SERVER_PORT);
-            Socket server_Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            string receivedMsg;
+            string msgHeader;
+            string msgData;
+            int hash;
+            typeMessage msgType;
+            ClientData tmp;
             while (true)
             {
-                if (MessageWaiting)
+                try
                 {
-                    // message same for all
-                    try
+                    // if addTime or addProject message is waiting
+                    if (MessageWaiting)
                     {
-                        server_Socket.Connect(serverAddress);
-                        server_Socket.Send(Message);
+                        receivedMsg = sendToReceiveFromServer(Message);
                         Message = null;
                         MessageWaiting = false;
-                        server_Socket.Shutdown(SocketShutdown.Both);
-                        server_Socket.Close();
+
+                        msgHeader = msgClass.getMessageHeader(receivedMsg);
+                        msgData = msgClass.getMessageData(receivedMsg);
+                        msgType = msgClass.getMessageType(msgHeader);
+
+                        //tbd
+                        switch (msgType)
+                        {
+                            case typeMessage.MSG_NEWPROJECT:
+                                if (!CheckHashValue(msgData))
+                                    throw new Exception("Unexpected hash value");
+                                break;
+                            case typeMessage.MSG_ADDTIME:
+                                if (!CheckHashValue(msgData))
+                                    throw new Exception("Unexpected hash value");
+                                break;
+                            case typeMessage.MSG_ADDTIMEERROR:
+                                throw new Exception("Add time failed");
+                                break;
+
+                            default:
+                                throw new Exception("Wrong message type");
+                        }
                     }
-                    catch (SocketException e)
+                    // else send heartbeat
+                    else
                     {
-                        Console.WriteLine("Client: unable to connect to server!\n" + e.Message);
+                        receivedMsg = sendToReceiveFromServer(msgClass.HeartBeatMessage(mModelMain.MyData, mModelMain.ProjectListHash));
+
+                        msgHeader = msgClass.getMessageHeader(receivedMsg);
+                        msgData = msgClass.getMessageData(receivedMsg);
+                        msgType = msgClass.getMessageType(msgHeader);
+
+                        if (msgType == typeMessage.MSG_HEARTBEAT)
+                        {
+                            // @Dominik: stimmt des parsen der heatbeatResponse so?
+                            if (!CheckHashValue(msgData))
+                                throw new Exception("Unexpected hash value");
+                        }
+                        else
+                            throw new Exception("Wrong message type");
                     }
                 }
-                Thread.Sleep(100);
+                catch (SocketException e)
+                {
+                    string msg = "Client: " + mModelMain.MyData.Number.ToString() + " (" + mModelMain.MyData.Name + ")\n" +
+                                 e.Message;
+                    MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+
+                Thread.Sleep(1000);
             }
         }
 
@@ -239,52 +286,51 @@ namespace Client.Controller
         private void UpdateProjects()
         {
             mModelMain.mProjects = mRemoteUpdater.updatedProjectList();
+            // @Dominik: do muas i nu in Hashwert berechnen, oda?
             mViewMain.UpdateProjects(mModelMain.mProjects);
         }
 
         private void ConnectToServer()
         {
-            if (mModelMain.MyData.Status == ClientStati.NotConnected)
+            MyMessageClass msgClass = new MyMessageClass(mModelMain.MyData.Number);
+            byte[] dataToSend = msgClass.ConnectMessage(mModelMain.MyData, mModelMain.ProjectListHash);
+            string receivedMsg;
+            string msgHeader;
+            string msgData;
+            typeMessage msgType;
+            ClientData tmp;
+            try
             {
-                MyMessageClass msgClass = new MyMessageClass(mModelMain.MyData.Number);
-                byte[] dataToSend = msgClass.ConnectMessage(mModelMain.MyData, mModelMain.ProjectListHash);
-                string receivedMsg;
-                string msgHeader;
-                string msgData;
-                typeMessage msgType;
-                ClientData tmp;
-                try
+                receivedMsg = sendToReceiveFromServer(dataToSend);
+
+                msgHeader = msgClass.getMessageHeader(receivedMsg);
+                msgData = msgClass.getMessageData(receivedMsg);
+                msgType = msgClass.getMessageType(msgHeader);
+
+                if (msgType != typeMessage.MSG_CONNECT)
                 {
-                    receivedMsg = sendToReceiveFromServer(dataToSend);
-
-                    msgHeader = msgClass.getMessageHeader(receivedMsg);
-                    msgData = msgClass.getMessageData(receivedMsg);
-                    msgType = msgClass.getMessageType(msgHeader);
-
-                    if (msgType != typeMessage.MSG_CONNECT)
-                    {
-                        throw new Exception("Wrong message type");
-                    }
-
-                    tmp = msgClass.ParseDataToClientData(msgType, msgData);
-
-                    if (tmp != mModelMain.MyData)
-                    {
-                        throw new Exception("Wrong client number/name!");
-                    }
-
-                    mModelMain.MyData = tmp;
-                    mModelMain.MyData.Status = ClientStati.Connected;
-                    //Update Statusbar
+                    throw new Exception("Wrong message type");
                 }
-                catch (Exception e)
+
+                tmp = msgClass.ParseDataToClientData(msgType, msgData);
+
+                if (tmp != mModelMain.MyData)
                 {
-                    string msg = "Client: " + mModelMain.MyData.Number.ToString() + " (" + mModelMain.MyData.Name + ")\n" +
-                                 e.Message;
-                    MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    throw new Exception("Wrong client number/name!");
                 }
+
+                mModelMain.MyData = tmp;
+                mModelMain.MyData.Status = ClientStati.Connected;
+                //Update Statusbar
+            }
+            catch (Exception e)
+            {
+                string msg = "Client: " + mModelMain.MyData.Number.ToString() + " (" + mModelMain.MyData.Name + ")\n" +
+                             e.Message;
+                MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
         /// <summary>
         /// Sends a message and receive the response.
         /// </summary>
@@ -323,5 +369,18 @@ namespace Client.Controller
             return receivedMessage;
         }
 
+
+        private bool CheckHashValue(string hashMsg)
+        {
+            int hash;
+            if (Int32.TryParse(hashMsg, out hash))
+            {
+                if (hash != mModelMain.ProjectListHash)
+                    UpdateProjects();
+                return true;
+            }
+            else
+                return false;
+        }
     }
 }

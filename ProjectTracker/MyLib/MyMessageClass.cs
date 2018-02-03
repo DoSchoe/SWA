@@ -326,7 +326,7 @@ namespace MyLib
         public byte[] HeartBeatResponse(int hashValueList)
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
-            string msgHeader = createMsgHeader(typeMessage.MSG_CONNECT);;
+            string msgHeader = createMsgHeader(typeMessage.MSG_HEARTBEAT);;
             string msg = msgHeader + SEPmessage + hashValueList.ToString();
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
