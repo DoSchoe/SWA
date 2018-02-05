@@ -85,6 +85,9 @@ namespace Client
             }
         }
 
-
+        public void setStatus(string status)
+        {
+            toolStripStatusLabel1.Text = "Status: " + status;
+        }
     }
 }
