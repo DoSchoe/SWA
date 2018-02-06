@@ -122,7 +122,7 @@ namespace Client.Controller
         {
             //MessageBox.Show(System.Text.Encoding.Default.GetString(message));
             // Send message
-            if (mModelMain.MyData.Status == ClientStati.Connected)
+            if (mModelMain.MyData.Status == ClientStati.Connected && Message == null)
             {
                 Message = message;
             }
@@ -161,7 +161,7 @@ namespace Client.Controller
         void SocketThread(Object stateInfo)
         {
             while (true)
-            {        
+            {
                 string receivedMsg;
                 string msgHeader;
                 string msgData;
@@ -169,7 +169,7 @@ namespace Client.Controller
                 ClientData tmp;
 
                 switch (mModelMain.MyData.Status)
-                {             
+                {
                     case ClientStati.Connected:
                         try
                         {
@@ -178,28 +178,28 @@ namespace Client.Controller
                             {
                                 receivedMsg = SendToReceiveFromServer(Message);
                                 Message = null;
-
-                                msgHeader = msgClass.getMessageHeader(receivedMsg);
-                                msgData = msgClass.getMessageData(receivedMsg);
-                                msgType = msgClass.getMessageType(msgHeader);
-
-                                //tbd
-                                switch (msgType)
+                                if (receivedMsg != "")
                                 {
-                                    case typeMessage.MSG_NEWPROJECT:
-                                        CheckHashValue();
-                                        break;
-                                    case typeMessage.MSG_ADDTIME:
-                                        CheckHashValue();
-                                        break;
-                                    case typeMessage.MSG_ADDTIMEERROR:
-                                        // @Dominik: is da sunsd nu was zu tun? irgendwie drauf reagieren?
-                                        // @Neuwirt: Eventuell in des LOG-File schreibn? und später nochmal probieren?
-                                        throw new Exception("Add time failed");
-                                        break;
+                                    msgHeader = msgClass.getMessageHeader(receivedMsg);
+                                    msgData = msgClass.getMessageData(receivedMsg);
+                                    msgType = msgClass.getMessageType(msgHeader);
+                                    switch (msgType)
+                                    {
+                                        case typeMessage.MSG_NEWPROJECT:
+                                            CheckHashValue();
+                                            break;
+                                        case typeMessage.MSG_ADDTIME:
+                                            CheckHashValue();
+                                            break;
+                                        case typeMessage.MSG_ADDTIMEERROR:
+                                            // @Dominik: is da sunsd nu was zu tun? irgendwie drauf reagieren?
+                                            // @Neuwirt: Eventuell in des LOG-File schreibn? und später nochmal probieren?
+                                            throw new Exception("Adding time failed");
+                                            break;
 
-                                    default:
-                                        throw new Exception("Wrong message type received");
+                                        default:
+                                            throw new Exception("Wrong message type received");
+                                    }
                                 }
                             }
                             // message in file
@@ -247,7 +247,7 @@ namespace Client.Controller
                         }
                         catch (Exception e)
                         {
-                            mModelMain.MyData.Status = ClientStati.NotConnected;
+                            ChangeStatus(ClientStati.NotConnected);
                             ShowError(e);
                         }
                         break;
@@ -313,7 +313,7 @@ namespace Client.Controller
                 if (UpdateProjectList && mModelMain.MyData.Status == ClientStati.Connected)
                 {
                     try
-                    {   
+                    {
                         mRemoteUpdater = cFactory.CreateChannel();
                         string response = mRemoteUpdater.updateProjectListAsString();
                         if (!(String.IsNullOrEmpty(response)))
@@ -374,9 +374,7 @@ namespace Client.Controller
             }
             catch (SocketException e)
             {
-                mViewMain.setStatus("Unable to Connect to server!");
-                mModelMain.MyData.Status = ClientStati.NotConnected;
-                //throw new Exception("Unable to Connect to server!\n(" + e.Message + ")");
+                ChangeStatus(ClientStati.NotConnected);
             }
             return receivedMessage;
         }
