@@ -108,7 +108,7 @@ namespace MyLib
             int minutes = Convert.ToInt32(time.Split(TIMESPANSEPARATOR)[2]);
             int seconds = Convert.ToInt32(time.Split(TIMESPANSEPARATOR)[3]);
 
-            return new TimeSpan(hours, minutes, seconds);
+            return new TimeSpan(days, hours, minutes, seconds);
         }
         #endregion
     }
