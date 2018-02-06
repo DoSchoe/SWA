@@ -306,19 +306,20 @@ namespace Client.Controller
         /// <param name="stateinfo"></param>
         private void WCFThread(Object stateinfo)
         {
+            ChannelFactory<IRemoteUpdate> cFactory =
+                new ChannelFactory<IRemoteUpdate>("WSHttpBinding_IRemoteUpdate");
             while (true)
             {
                 if (UpdateProjectList && mModelMain.MyData.Status == ClientStati.Connected)
                 {
                     try
-                    {
-                        ChannelFactory<IRemoteUpdate> cFactory =
-                            new ChannelFactory<IRemoteUpdate>("WSHttpBinding_IRemoteUpdate");
+                    {   
                         mRemoteUpdater = cFactory.CreateChannel();
                         string response = mRemoteUpdater.updateProjectListAsString();
                         if (!(String.IsNullOrEmpty(response)))
                         {
                             mModelMain.mProjects.Clear();
+                            UpdateProjectList = false;
                             string[] parts = response.Split('#');
                             foreach (string part in parts)
                             {
@@ -334,6 +335,7 @@ namespace Client.Controller
                         ChangeStatus(ClientStati.NotConnected);
                         throw;
                     }
+                    (mRemoteUpdater as ICommunicationObject).Close();
                 }
 
                 Thread.Sleep(TIMEOUT);
