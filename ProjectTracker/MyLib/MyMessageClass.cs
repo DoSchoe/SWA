@@ -23,6 +23,7 @@ namespace MyLib
         public const int BFFER_SIZE_BIT = BUFFER_SIZE_BYTE * 8;
         public const char SEPmessage = '?';
         public const char SEPdata = '#';
+        private const char TIMESPANSEPARATOR = ':';
 
         private int myID;
         #endregion
@@ -131,44 +132,17 @@ namespace MyLib
             return msgParts[1];
         }
 
-        /// <summary>
-        /// Creates the message data string.
-        /// </summary>
-        /// <param name="client">Client parameter as 'ClientData'.</param>
-        /// <returns>The data of the message as 'string'.</returns>
-        private string createMsgData(List<Project> data)
-        {
-            StringBuilder tmp = new StringBuilder();
-            tmp.Append(data[0].ToString());
-            for (int i = 1; i < data.Count; i++)
-            {
-                tmp.Append(SEPdata);
-                tmp.Append(data[i].ToString());
-            }
-
-            return tmp.ToString();
-        }
-
-        public List<Project> ParseDataToProjectList(typeMessage type, string data)
+        public Project ParseDataToProject(typeMessage type, string data)
         {
             string[] parts;
             switch (type)
             {
                 case typeMessage.MSG_ADDTIME:
                     parts = data.Split(SEPdata);
-                    return new List<Project>() { new Project(parts[0], parts[1]) };
-                    break;
-                case typeMessage.MSG_UPDATE:
-                    parts = data.Split(SEPdata);
-                    List<Project> tmp = new List<Project>();
-                    foreach (string part in parts)
-                    {
-                        tmp.Add(new Project(part));
-                    }
-                    return tmp;
+                    return new Project(parts[0], parts[1]);
                     break;
                 default:
-                    return new List<Project>();
+                    return null;
                     break;
             }
         }
@@ -244,6 +218,12 @@ namespace MyLib
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
         }
+
+        /// <summary>
+        /// Creates the data block of a connection message
+        /// </summary>
+        /// <param name="data">Clientdata of the sender.</param>
+        /// <returns></returns>
         private string createConnectData(ClientData data)
         {
             StringBuilder tmp = new StringBuilder();
@@ -268,6 +248,13 @@ namespace MyLib
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
         }
+
+        /// <summary>
+        /// Creates the data block of the response for a connection message.
+        /// </summary>
+        /// <param name="data">Clientdata of the receiver</param>
+        /// <param name="hashvalue">Hash-Value of the project list on the server</param>
+        /// <returns></returns>
         private string createConnectResponseData(ClientData data, int hashvalue)
         {
             StringBuilder tmp = new StringBuilder();
@@ -325,10 +312,23 @@ namespace MyLib
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
             string msgHeader = createMsgHeader(typeMessage.MSG_ADDTIME);
-            string msgData = data.ProjectName + SEPdata + time.ToString();
+            string msgData = data.ProjectName + SEPdata + TimeToLongString(time);
             string msg = msgHeader + SEPmessage + msgData;
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
+        }
+
+        private string TimeToLongString(TimeSpan time)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(time.Days);
+            sb.Append(TIMESPANSEPARATOR);
+            sb.Append(time.Hours);
+            sb.Append(TIMESPANSEPARATOR);
+            sb.Append(time.Minutes);
+            sb.Append(TIMESPANSEPARATOR);
+            sb.Append(time.Seconds);
+            return sb.ToString();
         }
 
         /// <summary>

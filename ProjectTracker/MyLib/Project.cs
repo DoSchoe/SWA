@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace MyLib
 {
@@ -111,7 +108,7 @@ namespace MyLib
             int minutes = Convert.ToInt32(time.Split(TIMESPANSEPARATOR)[2]);
             int seconds = Convert.ToInt32(time.Split(TIMESPANSEPARATOR)[3]);
 
-            return new TimeSpan(days, hours, minutes, seconds);
+            return new TimeSpan(hours, minutes, seconds);
         }
         #endregion
     }

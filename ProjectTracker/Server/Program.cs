@@ -31,8 +31,8 @@ namespace Server
             mServer = new ServerClass();
             OutputProjects(mServer.GetProjectList());
 
-            ThreadPool.QueueUserWorkItem(new WaitCallback(ListenForClients));
-            ThreadPool.QueueUserWorkItem(new WaitCallback(startUpdater));
+            ThreadPool.QueueUserWorkItem(new WaitCallback(SocketThread));
+            ThreadPool.QueueUserWorkItem(new WaitCallback(WCFThread));
 
             DisplayCommands();
             while (Run)
@@ -101,7 +101,7 @@ namespace Server
         /// Starts the WCF-Updater in a new thread.
         /// </summary>
         /// <param name="stateInfo"></param>
-        private static void startUpdater(Object stateInfo)
+        private static void WCFThread(Object stateInfo)
         {
             while (mServer == null)
             {
@@ -122,7 +122,7 @@ namespace Server
         /// Listens for calls from the clients.
         /// </summary>
         /// <param name="stateInfo"></param>
-        static void ListenForClients(Object stateInfo)
+        static void SocketThread(Object stateInfo)
         {
             Socket server_TcpSocket = null;
             try
@@ -179,7 +179,7 @@ namespace Server
                                 break;
 
                             case typeMessage.MSG_ADDTIME:
-                                Project tmp = (msgClass.ParseDataToProjectList(typeMessage.MSG_ADDTIME, msgData))[0];
+                                Project tmp = msgClass.ParseDataToProject(typeMessage.MSG_ADDTIME, msgData);
                                 response = mServer.UpdateTime(tmp) ? msgClass.AddTimeResponse(mServer.GetProjectListHash()) : msgClass.AddTimeResponseError();
                                 Console.WriteLine("Time added to project!");
                                 break;
@@ -214,8 +214,6 @@ namespace Server
             {
                 server_TcpSocket.Close();
             }
-        }
-
-        
+        } 
     }
 }

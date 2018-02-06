@@ -47,7 +47,7 @@ namespace Client.Controller
             mViewEvaluation.setController(this);
 
             ChangeStatus(ClientStati.NotConnected);
-            //msgClass = new MyMessageClass(mModelMain.MyData.Number);
+            msgClass = new MyMessageClass(mModelMain.MyData.Number);
 
             //CreateChannel();
             CreateThreads();
@@ -145,191 +145,194 @@ namespace Client.Controller
             }
         }
 
-        private void CreateChannel(Object stateinfo)
-        {
-            if (UpdateProjectList && mModelMain.MyData.Status == ClientStati.Connected)
-            {
-                try
-                {
-                    ChannelFactory<IRemoteUpdate> cFactory =
-                        new ChannelFactory<IRemoteUpdate>("WSHttpBinding_IRemoteUpdate");
-                    mRemoteUpdater = cFactory.CreateChannel();
-                    mModelMain.mProjects = mRemoteUpdater.updatedProjectList();
-                    mViewMain.UpdateProjects(mModelMain.mProjects);
-                }
-                catch (Exception e)
-                {
-                    ShowError(e);
-                    ChangeStatus(ClientStati.Dead);
-                    throw;
-                }
-            }
-
-            Thread.Sleep(TIMEOUT);
-        }
-
         /// <summary>
         /// Creates the different threads.
         /// </summary>
         private void CreateThreads()
         {
-            ThreadPool.QueueUserWorkItem(new WaitCallback(ConnectToServer));
-            ThreadPool.QueueUserWorkItem(new WaitCallback(CreateChannel));
-            ThreadPool.QueueUserWorkItem(new WaitCallback(SendMessages));
+            ThreadPool.QueueUserWorkItem(new WaitCallback(SocketThread));
+            ThreadPool.QueueUserWorkItem(new WaitCallback(WCFThread));
         }
 
         /// <summary>
-        /// Sends an Messages
+        /// Thread for a Socket-Connection
         /// </summary>
         /// <param name="stateInfo"></param>
-        void SendMessages(Object stateInfo)
+        void SocketThread(Object stateInfo)
         {
             while (true)
-            {
-                if (mModelMain.MyData.Status == ClientStati.Connected)
-                {
-                    string receivedMsg;
-                    string msgHeader;
-                    string msgData;
-                    typeMessage msgType;
-                    ClientData tmp;
-                    msgClass = new MyMessageClass(mModelMain.MyData.Number);
+            {        
+                string receivedMsg;
+                string msgHeader;
+                string msgData;
+                typeMessage msgType;
+                ClientData tmp;
 
-                    try
-                    {
-                        // if addTime or addProject message is waiting
-                        if (Message != null)
+                switch (mModelMain.MyData.Status)
+                {             
+                    case ClientStati.Connected:
+                        try
                         {
-                            receivedMsg = SendToReceiveFromServer(Message);
-                            Message = null;
-
-                            msgHeader = msgClass.getMessageHeader(receivedMsg);
-                            msgData = msgClass.getMessageData(receivedMsg);
-                            msgType = msgClass.getMessageType(msgHeader);
-
-                            //tbd
-                            switch (msgType)
+                            // if addTime or addProject message is waiting
+                            if (Message != null)
                             {
-                                case typeMessage.MSG_NEWPROJECT:
-                                    CheckHashValue();
-                                    break;
-                                case typeMessage.MSG_ADDTIME:
-                                    CheckHashValue();
-                                    break;
-                                case typeMessage.MSG_ADDTIMEERROR:
-                                    // @Dominik: is da sunsd nu was zu tun? irgendwie drauf reagieren?
-                                    // @Neuwirt: Eventuell in des LOG-File schreibn? und später nochmal probieren?
-                                    throw new Exception("Add time failed");
-                                    break;
+                                receivedMsg = SendToReceiveFromServer(Message);
+                                Message = null;
 
-                                default:
-                                    throw new Exception("Wrong message type received");
-                            }
-                        }
-                        // message in file
-                        else if (MessageWaiting)
-                        {
-                            if (File.Exists(FILEPATH))
-                                try
+                                msgHeader = msgClass.getMessageHeader(receivedMsg);
+                                msgData = msgClass.getMessageData(receivedMsg);
+                                msgType = msgClass.getMessageType(msgHeader);
+
+                                //tbd
+                                switch (msgType)
                                 {
-                                    Message = Encoding.ASCII.GetBytes(File.ReadLines(FILEPATH).First());
-                                    // If last entry
-                                    if (new FileInfo(FILEPATH).Length == 0)
-                                        MessageWaiting = false;
+                                    case typeMessage.MSG_NEWPROJECT:
+                                        CheckHashValue();
+                                        break;
+                                    case typeMessage.MSG_ADDTIME:
+                                        CheckHashValue();
+                                        break;
+                                    case typeMessage.MSG_ADDTIMEERROR:
+                                        // @Dominik: is da sunsd nu was zu tun? irgendwie drauf reagieren?
+                                        // @Neuwirt: Eventuell in des LOG-File schreibn? und später nochmal probieren?
+                                        throw new Exception("Add time failed");
+                                        break;
+
+                                    default:
+                                        throw new Exception("Wrong message type received");
                                 }
-                                catch
+                            }
+                            // message in file
+                            else if (MessageWaiting)
+                            {
+                                if (File.Exists(FILEPATH))
+                                    try
+                                    {
+                                        Message = Encoding.ASCII.GetBytes(File.ReadLines(FILEPATH).First());
+                                        // If last entry
+                                        if (new FileInfo(FILEPATH).Length == 0)
+                                            MessageWaiting = false;
+                                    }
+                                    catch
+                                    {
+                                        MessageWaiting = false;
+                                        throw new Exception("Command file corrupted");
+                                    }
+                                else
                                 {
                                     MessageWaiting = false;
-                                    throw new Exception("Command file corrupted");
+                                    throw new Exception("Command file missing");
                                 }
+                            }
+                            // else send heartbeat
                             else
                             {
-                                MessageWaiting = false;
-                                throw new Exception("Command file missing");
-                            }
-                        }
-                        // else send heartbeat
-                        else
-                        {
-                            byte[] thisData = msgClass.HeartBeatMessage(mModelMain.MyData);
-                            receivedMsg = SendToReceiveFromServer(thisData);
-                            msgHeader = msgClass.getMessageHeader(receivedMsg);
-                            msgData = msgClass.getMessageData(receivedMsg);
-                            msgType = msgClass.getMessageType(msgHeader);
+                                byte[] thisData = msgClass.HeartBeatMessage(mModelMain.MyData);
+                                receivedMsg = SendToReceiveFromServer(thisData);
+                                msgHeader = msgClass.getMessageHeader(receivedMsg);
+                                msgData = msgClass.getMessageData(receivedMsg);
+                                msgType = msgClass.getMessageType(msgHeader);
 
-                            if (msgType == typeMessage.MSG_HEARTBEATRESPONSE)
+                                if (msgType == typeMessage.MSG_HEARTBEATRESPONSE)
+                                {
+                                    mModelMain.MyData.LastHeartBeat = DateTime.Now;
+                                    mModelMain.ServerProjectListHash = msgClass.ParseDataToHashValue(msgType, msgData);
+                                    CheckHashValue();
+                                }
+                                else
+                                {
+                                    throw new Exception("Wrong message type received");
+                                }
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            mModelMain.MyData.Status = ClientStati.NotConnected;
+                            ShowError(e);
+                        }
+                        break;
+
+                    default:
+                        byte[] dataToSend = msgClass.ConnectMessage(mModelMain.MyData);
+                        try
+                        {
+                            receivedMsg = SendToReceiveFromServer(dataToSend);
+                            if (receivedMsg != "")
                             {
-                                mModelMain.MyData.LastHeartBeat = DateTime.Now;
-                                mModelMain.ServerProjectListHash = msgClass.ParseDataToHashValue(msgType, msgData);
-                                CheckHashValue();
+                                msgHeader = msgClass.getMessageHeader(receivedMsg);
+                                msgData = msgClass.getMessageData(receivedMsg);
+                                msgType = msgClass.getMessageType(msgHeader);
+
+                                if (msgType != typeMessage.MSG_CONNECTRESPONSE)
+                                {
+                                    throw new Exception("Wrong message type received");
+                                }
+
+                                tmp = msgClass.ParseDataToClientData(msgType, msgData);
+
+                                if (tmp.Name.Equals(mModelMain.MyData.Name))
+                                {
+                                    mModelMain.MyData = tmp;
+                                    ChangeStatus(ClientStati.Connected);
+                                    mModelMain.MyData.LastHeartBeat = DateTime.Now;
+                                    mModelMain.ServerProjectListHash = msgClass.ParseDataToHashValue(msgType, msgData);
+                                    msgClass = new MyMessageClass(mModelMain.MyData.Number);
+                                    CheckHashValue();
+                                }
+                                else
+                                {
+                                    throw new Exception("Wrong client number/name!");
+                                }
                             }
                             else
                             {
-                                throw new Exception("Wrong message type received");
+                                ChangeStatus(ClientStati.NotConnected);
                             }
                         }
-                    }
-                    catch (Exception e)
-                    {
-                        mModelMain.MyData.Status = ClientStati.NotConnected;
-                        ShowError(e);
-                    }
+                        catch (Exception e)
+                        {
+                            ChangeStatus(ClientStati.NotConnected);
+                            ShowError(e);
+                        }
+                        break;
                 }
                 Thread.Sleep(TIMEOUT);
             }
         }
 
-        private void ConnectToServer(Object stateinfo)
+        /// <summary>
+        /// Thread for the remote call for getting a new list.
+        /// </summary>
+        /// <param name="stateinfo"></param>
+        private void WCFThread(Object stateinfo)
         {
             while (true)
             {
-                if (mModelMain.MyData.Status != ClientStati.Connected)
+                if (UpdateProjectList && mModelMain.MyData.Status == ClientStati.Connected)
                 {
-                    MyMessageClass msgClass = new MyMessageClass(mModelMain.MyData.Number);
-                    byte[] dataToSend = msgClass.ConnectMessage(mModelMain.MyData);
-                    string receivedMsg;
-                    string msgHeader;
-                    string msgData;
-                    typeMessage msgType;
-                    ClientData tmp;
                     try
                     {
-                        receivedMsg = SendToReceiveFromServer(dataToSend);
-                        if (receivedMsg != "")
+                        ChannelFactory<IRemoteUpdate> cFactory =
+                            new ChannelFactory<IRemoteUpdate>("WSHttpBinding_IRemoteUpdate");
+                        mRemoteUpdater = cFactory.CreateChannel();
+                        string response = mRemoteUpdater.updateProjectListAsString();
+                        if (!(String.IsNullOrEmpty(response)))
                         {
-                            msgHeader = msgClass.getMessageHeader(receivedMsg);
-                            msgData = msgClass.getMessageData(receivedMsg);
-                            msgType = msgClass.getMessageType(msgHeader);
-
-                            if (msgType != typeMessage.MSG_CONNECTRESPONSE)
+                            mModelMain.mProjects.Clear();
+                            string[] parts = response.Split('#');
+                            foreach (string part in parts)
                             {
-                                throw new Exception("Wrong message type received");
-                            }
-
-                            tmp = msgClass.ParseDataToClientData(msgType, msgData);
-
-                            if (tmp.Name.Equals(mModelMain.MyData.Name))
-                            {
-                                mModelMain.MyData = tmp;
-                                ChangeStatus(ClientStati.Connected);
-                                mModelMain.MyData.LastHeartBeat = DateTime.Now;
-                                mModelMain.ServerProjectListHash = msgClass.ParseDataToHashValue(msgType, msgData);
-                                CheckHashValue();
-                            }
-                            else
-                            {
-                                throw new Exception("Wrong client number/name!");
+                                mModelMain.mProjects.Add(new Project(part));
                             }
                         }
-                        else
-                        {
-                            ChangeStatus(ClientStati.NotConnected);
-                        }
+
+                        mViewMain.UpdateProjects(mModelMain.mProjects);
                     }
                     catch (Exception e)
                     {
-                        ChangeStatus(ClientStati.NotConnected);
                         ShowError(e);
+                        ChangeStatus(ClientStati.NotConnected);
+                        throw;
                     }
                 }
 
@@ -373,10 +376,12 @@ namespace Client.Controller
                 mModelMain.MyData.Status = ClientStati.NotConnected;
                 //throw new Exception("Unable to Connect to server!\n(" + e.Message + ")");
             }
-
             return receivedMessage;
         }
 
+        /// <summary>
+        /// Checks the received hash value of the list with the currently saved value
+        /// </summary>
         private void CheckHashValue()
         {
             if (mModelMain.ServerProjectListHash != mModelMain.ClientProjectListHash)
@@ -422,7 +427,6 @@ namespace Client.Controller
                     mViewMain.setStatus("?");
                     break;
             }
-
         }
     }
 }
