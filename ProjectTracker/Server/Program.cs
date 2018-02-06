@@ -17,9 +17,7 @@ namespace Server
     class Program
     {
         private const int SERVER_PORT = 9050;
-        private const int HEARTBEAT_DELAY = 5000;
         private const int SERVER_ID = -99;
-        private static List<ClientData> mClients = new List<ClientData>();
         private static bool Run = true;
 
         private static ServerClass mServer;
@@ -160,35 +158,43 @@ namespace Server
                         msgHeader = msgClass.getMessageHeader(receivedMsg);
                         msgData = msgClass.getMessageData(receivedMsg);
                         msgType = msgClass.getMessageType(msgHeader);
+                        ClientData client;
 
                         switch (msgType)
                         {
                             case typeMessage.MSG_CONNECT:
-                                ClientData connectClient = msgClass.ParseDataToClientData(msgType, msgData);
-                                connectClient.Number = mClients.Count;
-                                connectClient.Address = client_Address;
-                                connectClient.Status = ClientStati.Connected;
-                                mClients.Add(connectClient);
-                                response = msgClass.ConnectResponse(connectClient, mServer.GetProjectListHash());
+                                client = msgClass.ParseDataToClientData(msgType, msgData);
+                                client.Number = mServer.GetClientList().Count+1;
+                                client.Address = client_Address;
+                                client.Status = ClientStati.Connected;
+                                mServer.AddClient(client);
+                                response = msgClass.ConnectResponse(client, mServer.GetProjectListHash());
+                                Console.WriteLine("Client added!");
                                 break;
 
                             case typeMessage.MSG_NEWPROJECT:
                                 mServer.AddProject(new Project(msgData));
                                 response = msgClass.NewProjectResponse(mServer.GetProjectListHash());
+                                Console.WriteLine("Project added!");
                                 break;
 
                             case typeMessage.MSG_ADDTIME:
                                 Project tmp = (msgClass.ParseDataToProjectList(typeMessage.MSG_ADDTIME, msgData))[0];
                                 response = mServer.UpdateTime(tmp) ? msgClass.AddTimeResponse(mServer.GetProjectListHash()) : msgClass.AddTimeResponseError();
+                                Console.WriteLine("Time added to project!");
                                 break;
 
                             case typeMessage.MSG_HEARTBEAT:
- 
-                                    response = msgClass.HeartBeatResponse(mServer.GetProjectListHash());
-
+                                client = msgClass.ParseDataToClientData(msgType, msgData);
+                                int index = mServer.FindClientIndex(client);
+                                if (index == -1)
+                                {
+                                    throw new ArgumentOutOfRangeException();
+                                }
+                                mServer.GetClientList()[index].LastHeartBeat = DateTime.Now;
+                                response = msgClass.HeartBeatResponse(mServer.GetClientList()[index], mServer.GetProjectListHash());
+                                Console.WriteLine("HeartBeat to Client: " + index);
                                 break;
-
-
                             default:
                                 throw new ArgumentOutOfRangeException();
                         }
@@ -209,5 +215,7 @@ namespace Server
                 server_TcpSocket.Close();
             }
         }
+
+        
     }
 }

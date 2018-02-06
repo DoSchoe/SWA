@@ -5,7 +5,17 @@ using System.Text;
 
 namespace MyLib
 {
-    public enum typeMessage { MSG_CONNECT = 1, MSG_DISCONNECT = 6, MSG_NEWPROJECT = 2, MSG_ADDTIME = 3, MSG_UPDATE = 4, MSG_HEARTBEAT = 5, MSG_ADDTIMEERROR = 99};
+    public enum typeMessage
+    {
+        MSG_CONNECT = 1,
+        MSG_CONNECTRESPONSE = 11,
+        MSG_NEWPROJECT = 2,
+        MSG_ADDTIME = 3, MSG_UPDATE = 4,
+        MSG_HEARTBEAT = 5,
+        MSG_HEARTBEATRESPONSE = 51,
+        MSG_DISCONNECT = 6,
+        MSG_ADDTIMEERROR = 99
+    };
     public class MyMessageClass
     {
         #region Members
@@ -139,8 +149,6 @@ namespace MyLib
             return tmp.ToString();
         }
 
-
-
         public List<Project> ParseDataToProjectList(typeMessage type, string data)
         {
             string[] parts;
@@ -168,20 +176,54 @@ namespace MyLib
         public ClientData ParseDataToClientData(typeMessage type, string data)
         {
             string[] parts;
+            ClientData tmp;
+            string address;
+            int port;
+            IPEndPoint clientAddress;
             switch (type)
             {
                 case typeMessage.MSG_CONNECT:
-                    parts = data.Split(SEPdata);                  
-                    return new ClientData(parts[1], (ClientStati)Convert.ToInt32(parts[2]));
+                    parts = data.Split(SEPdata);    
+                    tmp = new ClientData(parts[1], (ClientStati)Convert.ToInt32(parts[2]));
+                    return tmp;
+                    break;
+                case typeMessage.MSG_CONNECTRESPONSE:                    
+                    parts = data.Split(SEPdata);
+                    address = parts[3].Split(':')[0];
+                    port = Convert.ToInt32(parts[3].Split(':')[1]);
+                    clientAddress = new IPEndPoint(IPAddress.Parse(address), port);
+                    tmp = new ClientData(parts[1], Convert.ToInt32(parts[0]), (ClientStati) Convert.ToInt32(parts[2]), clientAddress);
+                    return tmp;
                     break;
                 case typeMessage.MSG_HEARTBEAT:
                     parts = data.Split(SEPdata);
-                    ClientData tmp = new ClientData(parts[1], (ClientStati)Convert.ToInt32(parts[2]));
-                    tmp.Number = Convert.ToInt32(parts[0]);
+                    address = parts[3].Split(':')[0];
+                    port = Convert.ToInt32(parts[3].Split(':')[1]);
+                    clientAddress = new IPEndPoint(IPAddress.Parse(address), port);
+                    tmp = new ClientData(parts[1], Convert.ToInt32(parts[0]), (ClientStati) Convert.ToInt32(parts[2]), clientAddress);
                     return tmp;
                     break;
                 default:
                     return null;
+                    break;
+            }
+        }
+
+        public int ParseDataToHashValue(typeMessage type, string data)
+        {
+            string[] parts;
+            switch (type)
+            {
+                case typeMessage.MSG_CONNECT:
+                    return 0;
+                    break;
+                case typeMessage.MSG_CONNECTRESPONSE:
+                    parts = data.Split(SEPdata);
+                    return Convert.ToInt32(parts[4]);
+                    break;
+                case typeMessage.MSG_HEARTBEAT:
+                default:
+                    return 0;
                     break;
             }
         }
@@ -193,25 +235,23 @@ namespace MyLib
         /// Creates a connect message.
         /// </summary>
         /// <returns>The connection message as 'byte[]'.</returns>
-        public byte[] ConnectMessage(ClientData sender, int hashValueList)
+        public byte[] ConnectMessage(ClientData sender)
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
             string msgHeader = createMsgHeader(typeMessage.MSG_CONNECT);
-            string msgData = createConnectData(sender, hashValueList);
+            string msgData = createConnectData(sender);
             string msg = msgHeader + SEPmessage + msgData;
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
         }
-        private string createConnectData(ClientData data, int hashvalue)
+        private string createConnectData(ClientData data)
         {
             StringBuilder tmp = new StringBuilder();
             tmp.Append(data.Number);
             tmp.Append(SEPdata);
             tmp.Append(data.Name);
             tmp.Append(SEPdata);
-            tmp.Append(data.Status);
-            tmp.Append(SEPdata);
-            tmp.Append(hashvalue.ToString());
+            tmp.Append((int)data.Status);
             return tmp.ToString();
         }
 
@@ -222,11 +262,25 @@ namespace MyLib
         public byte[] ConnectResponse(ClientData receiver, int hashValueList)
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
-            string msgHeader = createMsgHeader(typeMessage.MSG_CONNECT);
-            string msgData = createConnectData(receiver, hashValueList);
+            string msgHeader = createMsgHeader(typeMessage.MSG_CONNECTRESPONSE);
+            string msgData = createConnectResponseData(receiver, hashValueList);
             string msg = msgHeader + SEPmessage + msgData;
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
+        }
+        private string createConnectResponseData(ClientData data, int hashvalue)
+        {
+            StringBuilder tmp = new StringBuilder();
+            tmp.Append(data.Number);
+            tmp.Append(SEPdata);
+            tmp.Append(data.Name);
+            tmp.Append(SEPdata);
+            tmp.Append((int)data.Status);
+            tmp.Append(SEPdata);
+            tmp.Append(data.Address.ToString());
+            tmp.Append(SEPdata);
+            tmp.Append(hashvalue.ToString());
+            return tmp.ToString();
         }
         #endregion
 
@@ -309,45 +363,62 @@ namespace MyLib
         /// Creates a HeartBeat-message
         /// </summary>
         /// <returns></returns>
-        public byte[] HeartBeatMessage(ClientData sender, int hashValueList)
+        public byte[] HeartBeatMessage(ClientData sender)
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
             string msgHeader = createMsgHeader(typeMessage.MSG_HEARTBEAT);
-            string msgData = createConnectData(sender, hashValueList);
+            string msgData = createHeartBeatData(sender);
             string msg = msgHeader + SEPmessage + msgData;
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
+        }
+
+        private string createHeartBeatData(ClientData data)
+        {
+            StringBuilder tmp = new StringBuilder();
+            tmp.Append(data.Number);
+            tmp.Append(SEPdata);
+            tmp.Append(data.Name);
+            tmp.Append(SEPdata);
+            tmp.Append((int)data.Status);
+            tmp.Append(SEPdata);
+            tmp.Append(data.Address.ToString());
+            return tmp.ToString();
         }
 
         /// <summary>
         /// Creates the response for a connect message.
         /// </summary>
         /// <returns></returns>
-        public byte[] HeartBeatResponse(int hashValueList)
+        public byte[] HeartBeatResponse(ClientData receiver, int hashValueList)
         {
             byte[] tmp = new byte[BUFFER_SIZE_BYTE];
-            string msgHeader = createMsgHeader(typeMessage.MSG_HEARTBEAT);;
-            string msg = msgHeader + SEPmessage + hashValueList.ToString();
+            string msgHeader = createMsgHeader(typeMessage.MSG_HEARTBEATRESPONSE);
+            string msgdata = createHearBeatResponseData(receiver, hashValueList);
+            string msg = msgHeader + SEPmessage + msgdata;
             tmp = Encoding.ASCII.GetBytes(msg);
             return tmp;
+        }
+
+        private string createHearBeatResponseData(ClientData data, int hashvalue)
+        {
+            return createConnectResponseData(data, hashvalue);
         }
         #endregion
 
-        #region Update message
-        /// <summary>
-        /// Creates a message for updating the project list.
-        /// </summary>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public byte[] UpdateResponse(ClientData receiver, int hashValueList)
+        private string createResponseData(ClientData data, int hashvalue)
         {
-            byte[] tmp = new byte[BUFFER_SIZE_BYTE];
-            string msgHeader = createMsgHeader(typeMessage.MSG_UPDATE);
-            string msgData = createConnectData(receiver, hashValueList);
-            string msg = msgHeader + SEPmessage + msgData;
-            tmp = Encoding.ASCII.GetBytes(msg);
-            return tmp;
+            StringBuilder tmp = new StringBuilder();
+            tmp.Append(data.Number);
+            tmp.Append(SEPdata);
+            tmp.Append(data.Name);
+            tmp.Append(SEPdata);
+            tmp.Append((int)data.Status);
+            tmp.Append(SEPdata);
+            tmp.Append(data.Address.ToString());
+            tmp.Append(SEPdata);
+            tmp.Append(hashvalue.ToString());
+            return tmp.ToString();
         }
-        #endregion
     }
 }

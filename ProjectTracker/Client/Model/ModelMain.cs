@@ -11,24 +11,32 @@ namespace Client.Model
     {
         private ClientData mMyData;
         public List<Project> mProjects { get; set; }
-        private int mProjectListHash;
+        private int mClientProjectListHash;
+        private int mServertProjectListHash;
         public Project mCurrentProject { get; set; }
         public ClientData MyData
         {
             get => mMyData;
             set => mMyData = value;
         }
-        public int ProjectListHash
+        public int ClientProjectListHash
         {
-            get => mProjectListHash;
-            set => mProjectListHash = value;
+            get => mClientProjectListHash;
+            set => mClientProjectListHash = value;
+        }
+
+        public int ServerProjectListHash
+        {
+            get => mServertProjectListHash;
+            set => mServertProjectListHash = value;
         }
 
         public ModelMain()
         {
             mMyData = new ClientData(System.Environment.MachineName, ClientStati.NotStarted);
             mProjects = new List<Project>();
-            ProjectListHash = 0;
+            mClientProjectListHash = 0;
+            mServertProjectListHash = 0;
         }
     }
 }

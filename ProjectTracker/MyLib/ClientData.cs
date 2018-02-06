@@ -1,13 +1,4 @@
-﻿////////////////////////////////////////////////////////////
-/// Course: SWA3ILV
-/// Exercise: Sockets
-/// 
-/// $Author: Dominik $
-/// $LastChangedDate: 2017-12-27 21:47:48 +0100 (Mi, 27 Dez 2017) $
-/// $Revision: 19 $
-/// ////////////////////////////////////////////////////////////
-
-using System;
+﻿using System;
 using System.Net;
 
 namespace MyLib
@@ -71,8 +62,14 @@ namespace MyLib
 
         public static bool operator !=(ClientData obj1, ClientData obj2)
         {
-            return !(obj1.name == obj2.name
-                     && obj1.address.Equals(obj2.address));
+            if (obj1 == null || obj2 == null)
+            {
+                return false;
+            }
+            else
+            {
+                return !(obj1.name.Equals(obj2.name));
+            }           
         }
         #endregion
     }

@@ -10,7 +10,8 @@ namespace Client.Model
     public interface IModel
     {
         ClientData MyData { get; set; }
-        int ProjectListHash { get; set; }
+        int ClientProjectListHash { get; set; }
+        int ServerProjectListHash { get; set; }
         Project mCurrentProject { get; set; }
         List<Project> mProjects { get; set; }
     }

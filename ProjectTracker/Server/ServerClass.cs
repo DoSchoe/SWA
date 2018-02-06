@@ -16,7 +16,7 @@ namespace Server
         private int HEARTBEAT_DELAY = 5000;
         public const char SEPdata = '#';
         private List<Project> mProjects;
-        private List<IPEndPoint> mClients;
+        private static List<ClientData> mClients;
         private bool Run = true;
         private int ProjectListHash = 0;
 
@@ -26,13 +26,17 @@ namespace Server
         public ServerClass()
         {
             mProjects = readFile();
-
-
+            UpdateProjectListHash();
+            mClients = new List<ClientData>();
         }
 
         public List<Project> GetProjectList()
         {
             return mProjects;
+        }
+        public List<ClientData> GetClientList()
+        {
+            return mClients;
         }
 
         public string SendProjectList()
@@ -108,7 +112,7 @@ namespace Server
             {
                 projects.Create();
             }
-
+            
             return tmp;
         }
 
@@ -119,6 +123,7 @@ namespace Server
         {
             mProjects.Clear();
             mProjects = readFile();
+            UpdateProjectListHash();
         }
 
         /// <summary>
@@ -168,10 +173,27 @@ namespace Server
             return -1;
         }
 
+        public int FindClientIndex(ClientData reference)
+        {
+            foreach (ClientData c in mClients)
+            {
+                if (c.Address.Equals(reference.Address) && c.Name.Equals(reference.Name))
+                {
+                    return mClients.IndexOf(c);
+                }
+            }
+
+            return -1;
+        }
+
         public void AddProject(Project newProject)
         {
             mProjects.Add(newProject);
             UpdateProjectListHash();
+        }
+        public void AddClient(ClientData newClient)
+        {
+            mClients.Add(newClient);
         }
     }
 }
