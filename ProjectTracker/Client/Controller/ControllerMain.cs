@@ -43,8 +43,10 @@ namespace Client.Controller
             mViewAddProject.setController(this);
             mViewEvaluation.setController(this);
 
-            if (mModelMain.MyData.Status == ClientStati.NotConnected)
+            if (mModelMain.MyData.Status != ClientStati.Connected)
+            {
                 ConnectToServer();
+            }
 
             CreateChannel();
             CreateThreads();
