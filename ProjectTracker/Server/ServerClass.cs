@@ -195,5 +195,10 @@ namespace Server
         {
             mClients.Add(newClient);
         }
+
+        public void RemoveClient(ClientData oldClient)
+        {
+            mClients.Remove(oldClient);
+        }
     }
 }

@@ -19,6 +19,8 @@ namespace Server
         private const int SERVER_PORT = 9050;
         private const int SERVER_ID = -99;
         private static bool Run = true;
+        private static bool ProjectListChanged = false;
+        private const int TIMEOUT = 1000; // in ms
 
         private static ServerClass mServer;
         private static Updater mUpdater;
@@ -33,6 +35,8 @@ namespace Server
 
             ThreadPool.QueueUserWorkItem(new WaitCallback(SocketThread));
             ThreadPool.QueueUserWorkItem(new WaitCallback(WCFThread));
+            ThreadPool.QueueUserWorkItem(new WaitCallback(CheckClients));
+            ThreadPool.QueueUserWorkItem(new WaitCallback(SaveFile));
 
             DisplayCommands();
             while (Run)
@@ -105,7 +109,6 @@ namespace Server
         {
             while (mServer == null)
             {
-
             }
 
             mUpdater = new Updater(mServer);
@@ -114,7 +117,6 @@ namespace Server
             while (Run)
             {
             }
-
             mValueExchangerServiceHost.Close();
         }
 
@@ -164,7 +166,7 @@ namespace Server
                         {
                             case typeMessage.MSG_CONNECT:
                                 client = msgClass.ParseDataToClientData(msgType, msgData);
-                                client.Number = mServer.GetClientList().Count+1;
+                                client.Number = mServer.GetClientList().Count + 1;
                                 client.Address = client_Address;
                                 client.Status = ClientStati.Connected;
                                 mServer.AddClient(client);
@@ -175,12 +177,16 @@ namespace Server
                             case typeMessage.MSG_NEWPROJECT:
                                 mServer.AddProject(new Project(msgData));
                                 response = msgClass.NewProjectResponse(mServer.GetProjectListHash());
+                                ProjectListChanged = true;
                                 Console.WriteLine("Project added!");
                                 break;
 
                             case typeMessage.MSG_ADDTIME:
                                 Project tmp = msgClass.ParseDataToProject(typeMessage.MSG_ADDTIME, msgData);
-                                response = mServer.UpdateTime(tmp) ? msgClass.AddTimeResponse(mServer.GetProjectListHash()) : msgClass.AddTimeResponseError();
+                                response = mServer.UpdateTime(tmp)
+                                    ? msgClass.AddTimeResponse(mServer.GetProjectListHash())
+                                    : msgClass.AddTimeResponseError();
+                                ProjectListChanged = true;
                                 Console.WriteLine("Time added to project!");
                                 break;
 
@@ -191,8 +197,10 @@ namespace Server
                                 {
                                     throw new ArgumentOutOfRangeException();
                                 }
+
                                 mServer.GetClientList()[index].LastHeartBeat = DateTime.Now;
-                                response = msgClass.HeartBeatResponse(mServer.GetClientList()[index], mServer.GetProjectListHash());
+                                response = msgClass.HeartBeatResponse(mServer.GetClientList()[index],
+                                    mServer.GetProjectListHash());
                                 Console.WriteLine("HeartBeat to Client: " + index);
                                 break;
                             default:
@@ -214,6 +222,49 @@ namespace Server
             {
                 server_TcpSocket.Close();
             }
-        } 
+        }
+
+        /// <summary>
+        /// Checks every 30s if all clients have sent a heart beat
+        /// </summary>
+        /// <param name="stateInfo"></param>
+        static void CheckClients(Object stateInfo)
+        {
+            Thread.Sleep(5 * TIMEOUT);
+            DateTime timeThreshold;
+            TimeSpan offset = new TimeSpan(0, 0, 0, 0, 2 * TIMEOUT);
+            while (Run)
+            {
+                timeThreshold = DateTime.Now - offset;
+                foreach (ClientData client in mServer.GetClientList())
+                {
+                    if (client.LastHeartBeat < timeThreshold)
+                    {
+                        mServer.RemoveClient(client);
+                    }
+                }
+                Thread.Sleep(30 * TIMEOUT);
+            }
+        }
+
+        /// <summary>
+        /// Automatically saves the file every 5min
+        /// </summary>
+        /// <param name="stateInfo"></param>
+        static void SaveFile(Object stateInfo)
+        {
+            Thread.Sleep(5 * TIMEOUT);
+            DateTime lastSave = DateTime.Now;
+            TimeSpan offset = new TimeSpan(0, 0, 0, 0, 300 * TIMEOUT);
+            while (Run)
+            {
+                if (ProjectListChanged || DateTime.Now > lastSave + offset)
+                {
+                    mServer.SaveFile();
+                }
+
+                Thread.Sleep(300 * TIMEOUT);
+            }
+        }
     }
 }
