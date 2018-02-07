@@ -69,8 +69,9 @@ namespace Client.Controller
             if (addDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 Project projectToAdd = new Project(addDialog.projectName, addDialog.projectedTime);
-                mModelMain.mProjects.Add(projectToAdd);
                 QueueMessage(msgClass.NewProjectMessage(projectToAdd));
+                mModelMain.mProjects.Add(projectToAdd);
+                UpdateCombobox();
             }
         }
 
@@ -83,8 +84,9 @@ namespace Client.Controller
                     mModelMain.mCurrentProject.ProjectName, "Commit", MessageBoxButtons.YesNo);
             if (dialogResult == DialogResult.Yes)
             {
-                mModelMain.mCurrentProject.AddTime(timeToAdd);
                 QueueMessage(msgClass.AddTimeMessage(mModelMain.mCurrentProject, timeToAdd));
+                mModelMain.mCurrentProject.AddTime(timeToAdd);
+                UpdateCombobox();
             }
         }
 
@@ -206,14 +208,19 @@ namespace Client.Controller
                                 if (File.Exists(FILEPATH))
                                     try
                                     {
-                                        string line = File.ReadLines(FILEPATH).First();
-                                        if (!(String.IsNullOrEmpty(line)))
+                                        if (new FileInfo(FILEPATH).Length != 0)
                                         {
-                                            Message = Encoding.ASCII.GetBytes(line);
-                                            // If last entry
-                                            if (new FileInfo(FILEPATH).Length == 0)
-                                                MessageWaiting = false;
+                                            List<string> lines = File.ReadAllLines(FILEPATH).ToList();
+                                            if (lines.Count != 0)
+                                            {
+                                                Message = Encoding.ASCII.GetBytes(lines.First());
+                                                lines.RemoveAt(0);
+                                                File.WriteAllLines(FILEPATH, lines);
+                                            }
                                         }
+                                        else
+                                            MessageWaiting = false;
+
                                     }
                                     catch
                                     {
@@ -327,10 +334,8 @@ namespace Client.Controller
                             {
                                 mModelMain.mProjects.Add(new Project(part));
                             }
-                            
                             mModelMain.ClientProjectListHash = mModelMain.ServerProjectListHash;
-                            mViewMain.UpdateProjects(mModelMain.mProjects);
-                            mViewMain.Update();
+                            UpdateCombobox();
                         }
                     }
                     catch (Exception e)
@@ -415,20 +420,32 @@ namespace Client.Controller
             {
                 case ClientStati.Connected:
                     mViewMain.setStatus("Connected");
+                    mViewMain.EnableDisableAdd(true);
                     break;
                 case ClientStati.NotConnected:
                     mViewMain.setStatus("Not Connected");
+                    mViewMain.EnableDisableAdd(false);
                     break;
                 case ClientStati.Dead:
                     mViewMain.setStatus("Dead");
+                    mViewMain.EnableDisableAdd(false);
                     break;
                 case ClientStati.NotStarted:
                     mViewMain.setStatus("NotStarted");
+                    mViewMain.EnableDisableAdd(false);
                     break;
                 default:
                     mViewMain.setStatus("?");
+                    mViewMain.EnableDisableAdd(false);
                     break;
             }
         }
+
+        private void UpdateCombobox()
+        {
+            mViewMain.UpdateProjects(mModelMain.mProjects);
+            mViewMain.Update();
+        }
+        
     }
 }

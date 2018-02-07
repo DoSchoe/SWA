@@ -33,6 +33,7 @@ namespace Client
         public void UpdateProjects(List<Project> projects)
         {
             comboBox1.DataSource = null;
+            comboBox1.Items.Clear();
             comboBox1.DisplayMember = "mProjectName";
             comboBox1.DataSource = projects;
             comboBox1.Update();
@@ -90,6 +91,11 @@ namespace Client
         public void setStatus(string status)
         {
             toolStripStatusLabel1.Text = "Status: " + status;
+        }
+
+        public void EnableDisableAdd(bool enable)
+        {
+            btn_AddProject.Enabled = enable;
         }
     }
 }
