@@ -26,7 +26,8 @@ namespace Client.Controller
         private ViewEvaluation mViewEvaluation;
         private const int SERVER_PORT = 9050;
         private string SERVER_IP = "127.0.0.1";
-        private const string FILEPATH = @"C:\temp\ProjectTrackerMessages.txt";
+        string FILEPATH = Directory.GetCurrentDirectory()+ @"\"+"ProjectTrackerMessages.txt";
+        //private const string FILEPATH = @"C:\temp\ProjectTrackerMessages.txt";
         private const int TIMEOUT = 1000; // in ms
         private bool MessageWaiting;
         private bool UpdateProjectList = false;
