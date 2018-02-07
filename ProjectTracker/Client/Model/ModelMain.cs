@@ -16,19 +16,40 @@ namespace Client.Model
         public Project mCurrentProject { get; set; }
         public ClientData MyData
         {
-            get => mMyData;
-            set => mMyData = value;
+            get
+            {
+                return mMyData;
+            }
+
+            set
+            {
+                mMyData = value;
+            }
         }
         public int ClientProjectListHash
         {
-            get => mClientProjectListHash;
-            set => mClientProjectListHash = value;
+            get
+            {
+                return mClientProjectListHash;
+            }
+
+            set
+            {
+                mClientProjectListHash = value;
+            }
         }
 
         public int ServerProjectListHash
         {
-            get => mServertProjectListHash;
-            set => mServertProjectListHash = value;
+            get
+            {
+                return mServertProjectListHash;
+            }
+
+            set
+            {
+                mServertProjectListHash = value;
+            }
         }
 
         public ModelMain()

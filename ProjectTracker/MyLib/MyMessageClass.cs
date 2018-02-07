@@ -373,6 +373,11 @@ namespace MyLib
             return tmp;
         }
 
+        /// <summary>
+        /// Creates the data block for a heart beat message
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
         private string createHeartBeatData(ClientData data)
         {
             StringBuilder tmp = new StringBuilder();
@@ -387,7 +392,7 @@ namespace MyLib
         }
 
         /// <summary>
-        /// Creates the response for a connect message.
+        /// Creates the response for a heart beat message.
         /// </summary>
         /// <returns></returns>
         public byte[] HeartBeatResponse(ClientData receiver, int hashValueList)
@@ -400,25 +405,16 @@ namespace MyLib
             return tmp;
         }
 
+        /// <summary>
+        /// Creates the data block for a heart beat response
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="hashvalue"></param>
+        /// <returns></returns>
         private string createHearBeatResponseData(ClientData data, int hashvalue)
         {
             return createConnectResponseData(data, hashvalue);
         }
         #endregion
-
-        private string createResponseData(ClientData data, int hashvalue)
-        {
-            StringBuilder tmp = new StringBuilder();
-            tmp.Append(data.Number);
-            tmp.Append(SEPdata);
-            tmp.Append(data.Name);
-            tmp.Append(SEPdata);
-            tmp.Append((int)data.Status);
-            tmp.Append(SEPdata);
-            tmp.Append(data.Address.ToString());
-            tmp.Append(SEPdata);
-            tmp.Append(hashvalue.ToString());
-            return tmp.ToString();
-        }
     }
 }

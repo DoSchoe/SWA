@@ -35,6 +35,8 @@ namespace Client
             comboBox1.DataSource = null;
             comboBox1.DisplayMember = "mProjectName";
             comboBox1.DataSource = projects;
+            comboBox1.Update();
+            
         }
 
         private void btn_AddProject_Click(object sender, EventArgs e)

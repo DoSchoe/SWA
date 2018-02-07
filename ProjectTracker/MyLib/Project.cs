@@ -12,9 +12,43 @@ namespace MyLib
         private TimeSpan mTimeEffortProjected;
         private TimeSpan mTimeEffortCurrent;
 
-        public string ProjectName { get => mProjectName; private set => mProjectName = value; }
-        public TimeSpan MTimeEffortProjected { get => mTimeEffortProjected; private set => mTimeEffortProjected = value; }
-        public TimeSpan MTimeEffortCurrent { get => mTimeEffortCurrent; private set => mTimeEffortCurrent = value; }
+        public string ProjectName
+        {
+            get
+            {
+                return mProjectName;
+            }
+            private set
+            {
+                mProjectName = value;
+            }
+        }
+
+        public TimeSpan MTimeEffortProjected
+        {
+            get
+            {
+                return mTimeEffortProjected;
+            }
+
+            private set
+            {
+                mTimeEffortProjected = value;
+            }
+        }
+
+        public TimeSpan MTimeEffortCurrent
+        {
+            get
+            {
+                return mTimeEffortCurrent;
+            }
+
+            private set
+            {
+                mTimeEffortCurrent = value;
+            }
+        }
 
         #region CTors
         /// <summary>

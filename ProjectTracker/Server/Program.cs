@@ -116,6 +116,8 @@ namespace Server
             mValueExchangerServiceHost.Open();
             while (Run)
             {
+                Thread.Sleep(TIMEOUT);
+                Console.WriteLine("WCFThread");
             }
             mValueExchangerServiceHost.Close();
         }
@@ -135,6 +137,7 @@ namespace Server
 
                 byte[] receivedData;
                 int dataCount;
+                int index;
                 string receivedMsg;
                 typeMessage msgType;
                 string msgData;
@@ -166,10 +169,19 @@ namespace Server
                         {
                             case typeMessage.MSG_CONNECT:
                                 client = msgClass.ParseDataToClientData(msgType, msgData);
-                                client.Number = mServer.GetClientList().Count + 1;
+                                client.Number = mServer.ClientNumber;
                                 client.Address = client_Address;
-                                client.Status = ClientStati.Connected;
-                                mServer.AddClient(client);
+                                client.Status = ClientStati.Connected;                              
+                                index = mServer.FindClientIndex(client);
+                                if (index == -1)
+                                {
+                                    mServer.AddClient(client);
+                                }
+                                else
+                                {
+                                    client = mServer.GetClientList()[index];
+                                }
+                                client.LastHeartBeat = DateTime.Now;
                                 response = msgClass.ConnectResponse(client, mServer.GetProjectListHash());
                                 Console.WriteLine("Client added!");
                                 break;
@@ -192,7 +204,7 @@ namespace Server
 
                             case typeMessage.MSG_HEARTBEAT:
                                 client = msgClass.ParseDataToClientData(msgType, msgData);
-                                int index = mServer.FindClientIndex(client);
+                                index = mServer.FindClientIndex(client);
                                 if (index == -1)
                                 {
                                     throw new ArgumentOutOfRangeException();
@@ -225,7 +237,7 @@ namespace Server
         }
 
         /// <summary>
-        /// Checks every 30s if all clients have sent a heart beat
+        /// Checks every 5s if all clients have sent a heart beat
         /// </summary>
         /// <param name="stateInfo"></param>
         static void CheckClients(Object stateInfo)
@@ -233,17 +245,23 @@ namespace Server
             Thread.Sleep(5 * TIMEOUT);
             DateTime timeThreshold;
             TimeSpan offset = new TimeSpan(0, 0, 0, 0, 2 * TIMEOUT);
+            List<int> deletIndex = new List<int>();
             while (Run)
             {
                 timeThreshold = DateTime.Now - offset;
-                foreach (ClientData client in mServer.GetClientList())
+                for (int i = 0; i < mServer.GetClientList().Count; i++)
                 {
-                    if (client.LastHeartBeat < timeThreshold)
+                    if (mServer.GetClientList()[i].LastHeartBeat < timeThreshold)
                     {
-                        mServer.RemoveClient(client);
+                        deletIndex.Add(i);
                     }
                 }
-                Thread.Sleep(30 * TIMEOUT);
+
+                foreach (int i in deletIndex)
+                {
+                    mServer.GetClientList().RemoveAt(i);
+                }
+                Thread.Sleep(10 * TIMEOUT);
             }
         }
 

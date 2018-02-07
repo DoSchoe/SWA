@@ -11,6 +11,7 @@ namespace Server
 {
     public class ServerClass
     {
+        #region Members
         private string PROJECT_FILE = @"c:\Temp\Projects.txt";
         private int SERVER_PORT = 9050;
         private int HEARTBEAT_DELAY = 5000;
@@ -19,6 +20,21 @@ namespace Server
         private static List<ClientData> mClients;
         private bool Run = true;
         private int ProjectListHash = 0;
+        private int mClientNumber;
+
+        public int ClientNumber
+        {
+            get
+            {
+                return mClientNumber;
+            }
+
+            private set
+            {
+                mClientNumber = value;
+            }
+        }
+        #endregion
 
         /// <summary>
         /// CTor
@@ -28,67 +44,10 @@ namespace Server
             mProjects = readFile();
             UpdateProjectListHash();
             mClients = new List<ClientData>();
+            mClientNumber = 1;
         }
 
-        public List<Project> GetProjectList()
-        {
-            return mProjects;
-        }
-        public List<ClientData> GetClientList()
-        {
-            return mClients;
-        }
-
-        public string SendProjectList()
-        {
-            StringBuilder tmp = new StringBuilder();
-            tmp.Append(mProjects[0].ToString());
-            for (int i = 1; i < mProjects.Count; i++)
-            {
-                tmp.Append(SEPdata);
-                tmp.Append(mProjects[i].ToString());
-            }
-
-            return tmp.ToString();
-        }
-
-        public bool ListChanged()
-        {
-            if (ProjectListHash != CalculateHash())
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        public int GetProjectListHash()
-        {
-            return ProjectListHash;
-        }
-
-        public void UpdateProjectListHash()
-        {
-            ProjectListHash = CalculateHash();
-        }
-
-        public bool UpdateTime(Project project)
-        {
-            int i = FindProjectIndex(project);
-            if (-1 != i)
-            {
-                mProjects[i].AddTime(project.MTimeEffortCurrent);
-                UpdateProjectListHash();
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
+        #region File methods
         /// <summary>
         /// Reads a saved project file
         /// </summary>
@@ -99,14 +58,17 @@ namespace Server
             FileInfo projects = new FileInfo(PROJECT_FILE);
             if (projects.Exists)
             {
-                StreamReader sr = new StreamReader(projects.FullName);
-                string line;
-                while ((line = sr.ReadLine()) != null)
+                if (projects.Length != 0)
                 {
-                    tmp.Add(new Project(line));
-                }
+                    StreamReader sr = new StreamReader(projects.FullName);
+                    string line;
+                    while ((line = sr.ReadLine()) != null)
+                    {
+                        tmp.Add(new Project(line));
+                    }
 
-                sr.Close();
+                    sr.Close();
+                }
             }
             else
             {
@@ -138,9 +100,96 @@ namespace Server
             }
             sw.Close();
         }
+        #endregion
+
+        #region Project-List methods
+        /// <summary>
+        /// Returns the current project list
+        /// </summary>
+        /// <returns></returns>
+        public List<Project> GetProjectList()
+        {
+            return mProjects;
+        }
 
         /// <summary>
-        /// Calculates a hash value for the list
+        /// Sends the whole project list as string
+        /// </summary>
+        /// <returns></returns>
+        public string SendProjectList()
+        {
+            if (mProjects.Count == 0)
+            {
+                return "";
+            }
+            else
+            {
+                StringBuilder tmp = new StringBuilder();
+                tmp.Append(mProjects[0].ToString());
+                for (int i = 1; i < mProjects.Count; i++)
+                {
+                    tmp.Append(SEPdata);
+                    tmp.Append(mProjects[i].ToString());
+                }
+
+                return tmp.ToString();
+            }
+        }
+
+        /// <summary>
+        /// Checks if the project list was changed
+        /// </summary>
+        /// <returns></returns>
+        public bool ListChanged()
+        {
+            if (ProjectListHash != CalculateHash())
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Returns the hash-value of the project list
+        /// </summary>
+        /// <returns></returns>
+        public int GetProjectListHash()
+        {
+            return ProjectListHash;
+        }
+
+        /// <summary>
+        /// Updates the hash-value of the project list
+        /// </summary>
+        public void UpdateProjectListHash()
+        {
+            ProjectListHash = CalculateHash();
+        }
+        /// <summary>
+        /// Updates the time of a project
+        /// </summary>
+        /// <param name="project"></param>
+        /// <returns></returns>
+        public bool UpdateTime(Project project)
+        {
+            int i = FindProjectIndex(project);
+            if (-1 != i)
+            {
+                mProjects[i].AddTime(project.MTimeEffortCurrent);
+                UpdateProjectListHash();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Calculates a hash value for the project list
         /// </summary>
         /// <param name="list"></param>
         /// <returns></returns>
@@ -173,11 +222,28 @@ namespace Server
             return -1;
         }
 
+        /// <summary>
+        /// Adds a project
+        /// </summary>
+        /// <param name="newProject"></param>
+        public void AddProject(Project newProject)
+        {
+            mProjects.Add(newProject);
+            UpdateProjectListHash();
+        }
+        #endregion
+
+        #region Client-List methods
+        /// <summary>
+        /// Finds the index of an client
+        /// </summary>
+        /// <param name="reference"></param>
+        /// <returns></returns>
         public int FindClientIndex(ClientData reference)
         {
             foreach (ClientData c in mClients)
             {
-                if (c.Address.Equals(reference.Address) && c.Name.Equals(reference.Name))
+                if (c.Address.Equals(reference.Address) && c.Name.Equals(reference.Name) && c.Number.Equals(reference.Number))
                 {
                     return mClients.IndexOf(c);
                 }
@@ -186,19 +252,57 @@ namespace Server
             return -1;
         }
 
-        public void AddProject(Project newProject)
+        /// <summary>
+        /// Returns the current client list
+        /// </summary>
+        /// <returns></returns>
+        public List<ClientData> GetClientList()
         {
-            mProjects.Add(newProject);
-            UpdateProjectListHash();
+            return mClients;
         }
+
+        /// <summary>
+        /// Adds a client
+        /// </summary>
+        /// <param name="newClient"></param>
         public void AddClient(ClientData newClient)
         {
             mClients.Add(newClient);
+            mClientNumber = FindClientNumber();
         }
 
+        /// <summary>
+        /// Removes a client
+        /// </summary>
+        /// <param name="oldClient"></param>
         public void RemoveClient(ClientData oldClient)
         {
             mClients.Remove(oldClient);
         }
+
+        private int FindClientNumber()
+        {
+            bool stop = false;
+            List<int> clientnumbers = (from c in mClients select c.Number).ToList();
+            int tmp = 1;
+            while (!stop)
+            {
+                if (clientnumbers.Contains(tmp))
+                {
+                    tmp++;
+                    if (tmp == Int32.MaxValue - 1)
+                    {
+                        stop = true;
+                    }
+                }
+                else
+                {
+                    return tmp;
+                }
+            }
+
+            return -1;
+        }
+        #endregion
     }
 }

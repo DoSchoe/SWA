@@ -1,4 +1,4 @@
-﻿#define TestList
+﻿//#define TestList
 
 using System;
 using System.Collections.Generic;
@@ -17,7 +17,6 @@ using System.IO;
 
 namespace Client.Controller
 {
-
     class ControllerMain : IController
     {
         private IModel mModelMain;
@@ -65,12 +64,12 @@ namespace Client.Controller
 
         public void AddProject()
         {
-            //ViewAddProject addDialog = new ViewAddProject();
-            if (mViewAddProject.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            ViewAddProject addDialog = new ViewAddProject();
+            addDialog.setController(this);
+            if (addDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                Project projectToAdd = new Project(mViewAddProject.projectName, mViewAddProject.projectedTime);
+                Project projectToAdd = new Project(addDialog.projectName, addDialog.projectedTime);
                 mModelMain.mProjects.Add(projectToAdd);
-                mViewMain.UpdateProjects(mModelMain.mProjects);
                 QueueMessage(msgClass.NewProjectMessage(projectToAdd));
             }
         }
@@ -85,7 +84,6 @@ namespace Client.Controller
             if (dialogResult == DialogResult.Yes)
             {
                 mModelMain.mCurrentProject.AddTime(timeToAdd);
-                mViewMain.UpdateProjects(mModelMain.mProjects);
                 QueueMessage(msgClass.AddTimeMessage(mModelMain.mCurrentProject, timeToAdd));
             }
         }
@@ -208,10 +206,14 @@ namespace Client.Controller
                                 if (File.Exists(FILEPATH))
                                     try
                                     {
-                                        Message = Encoding.ASCII.GetBytes(File.ReadLines(FILEPATH).First());
-                                        // If last entry
-                                        if (new FileInfo(FILEPATH).Length == 0)
-                                            MessageWaiting = false;
+                                        string line = File.ReadLines(FILEPATH).First();
+                                        if (!(String.IsNullOrEmpty(line)))
+                                        {
+                                            Message = Encoding.ASCII.GetBytes(line);
+                                            // If last entry
+                                            if (new FileInfo(FILEPATH).Length == 0)
+                                                MessageWaiting = false;
+                                        }
                                     }
                                     catch
                                     {
@@ -306,14 +308,14 @@ namespace Client.Controller
         /// <param name="stateinfo"></param>
         private void WCFThread(Object stateinfo)
         {
-            ChannelFactory<IRemoteUpdate> cFactory =
-                new ChannelFactory<IRemoteUpdate>("WSHttpBinding_IRemoteUpdate");
             while (true)
             {
                 if (UpdateProjectList && mModelMain.MyData.Status == ClientStati.Connected)
                 {
                     try
                     {
+                        ChannelFactory<IRemoteUpdate> cFactory =
+                            new ChannelFactory<IRemoteUpdate>("WSHttpBinding_IRemoteUpdate");
                         mRemoteUpdater = cFactory.CreateChannel();
                         string response = mRemoteUpdater.updateProjectListAsString();
                         if (!(String.IsNullOrEmpty(response)))
@@ -325,9 +327,11 @@ namespace Client.Controller
                             {
                                 mModelMain.mProjects.Add(new Project(part));
                             }
+                            
+                            mModelMain.ClientProjectListHash = mModelMain.ServerProjectListHash;
+                            mViewMain.UpdateProjects(mModelMain.mProjects);
+                            mViewMain.Update();
                         }
-
-                        mViewMain.UpdateProjects(mModelMain.mProjects);
                     }
                     catch (Exception e)
                     {
@@ -337,7 +341,6 @@ namespace Client.Controller
                     }
                     (mRemoteUpdater as ICommunicationObject).Close();
                 }
-
                 Thread.Sleep(TIMEOUT);
             }
         }
@@ -387,7 +390,6 @@ namespace Client.Controller
             if (mModelMain.ServerProjectListHash != mModelMain.ClientProjectListHash)
             {
                 UpdateProjectList = true;
-                mModelMain.ClientProjectListHash = mModelMain.ServerProjectListHash;
             }
         }
 

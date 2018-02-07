@@ -13,12 +13,84 @@ namespace MyLib
         private IPEndPoint address;
         private int startingAttempts;
         private DateTime lastHeartBeat;
-        public string Name { get => name; set => name = value; }
-        public int Number { get => number; set => number = value; }
-        public ClientStati Status { get => status; set => status = value; }
-        public IPEndPoint Address { get => address; set => address = value; }
-        public int StartingAttempts { get => startingAttempts; set => startingAttempts = value; }
-        public DateTime LastHeartBeat { get => lastHeartBeat; set => lastHeartBeat = value; }
+
+        public string Name
+        {
+            get
+            {
+                return name;
+            }
+
+            set
+            {
+                name = value;
+            }
+        }
+
+        public int Number
+        {
+            get
+            {
+                return number;
+            }
+
+            set
+            {
+                number = value;
+            }
+        }
+
+        public ClientStati Status
+        {
+            get
+            {
+                return status;
+            }
+
+            set
+            {
+                status = value;
+            }
+        }
+
+        public IPEndPoint Address
+        {
+            get
+            {
+                return address;
+            }
+
+            set
+            {
+                address = value;
+            }
+        }
+
+        public int StartingAttempts
+        {
+            get
+            {
+                return startingAttempts;
+            }
+
+            set
+            {
+                startingAttempts = value;
+            }
+        }
+
+        public DateTime LastHeartBeat
+        {
+            get
+            {
+                return lastHeartBeat;
+            }
+
+            set
+            {
+                lastHeartBeat = value;
+            }
+        }
         #endregion
 
         /// <summary>

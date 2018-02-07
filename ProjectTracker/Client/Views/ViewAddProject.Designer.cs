@@ -123,10 +123,20 @@
             0,
             0,
             0});
+            this.nud_projectedEffort.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
             this.nud_projectedEffort.Name = "nud_projectedEffort";
             this.nud_projectedEffort.Size = new System.Drawing.Size(120, 20);
             this.nud_projectedEffort.TabIndex = 4;
             this.nud_projectedEffort.ThousandsSeparator = true;
+            this.nud_projectedEffort.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
             // 
             // label1
             // 
