@@ -241,9 +241,9 @@ namespace Server
         /// <param name="stateInfo"></param>
         static void CheckClients(Object stateInfo)
         {
-            Thread.Sleep(5 * TIMEOUT);
+            Thread.Sleep(2 * TIMEOUT);
             DateTime timeThreshold;
-            TimeSpan offset = new TimeSpan(0, 0, 0, 0, 2 * TIMEOUT);
+            TimeSpan offset = new TimeSpan(0, 0, 0, 0, 3 * TIMEOUT);
             List<int> deletIndex = new List<int>();
             while (Run)
             {
@@ -268,7 +268,7 @@ namespace Server
                     }
                 }
 
-                Thread.Sleep(10 * TIMEOUT);
+                Thread.Sleep(2 * TIMEOUT);
             }
         }
 
@@ -288,7 +288,7 @@ namespace Server
                     mServer.SaveFile();
                 }
 
-                Thread.Sleep(300 * TIMEOUT);
+                Thread.Sleep(10 * TIMEOUT);
             }
         }
     }
