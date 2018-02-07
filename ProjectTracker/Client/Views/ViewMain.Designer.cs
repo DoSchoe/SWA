@@ -34,6 +34,7 @@
             this.btn_Evaluate = new System.Windows.Forms.Button();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
+            this.bt_IP = new System.Windows.Forms.Button();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -95,6 +96,16 @@
             this.toolStripStatusLabel1.Size = new System.Drawing.Size(62, 17);
             this.toolStripStatusLabel1.Text = "Status: NA";
             // 
+            // bt_IP
+            // 
+            this.bt_IP.Location = new System.Drawing.Point(238, 42);
+            this.bt_IP.Name = "bt_IP";
+            this.bt_IP.Size = new System.Drawing.Size(34, 23);
+            this.bt_IP.TabIndex = 2;
+            this.bt_IP.Text = "IP";
+            this.bt_IP.UseVisualStyleBackColor = true;
+            this.bt_IP.Click += new System.EventHandler(this.bt_IP_Click);
+            // 
             // ViewMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -102,6 +113,7 @@
             this.ClientSize = new System.Drawing.Size(284, 93);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.btn_Evaluate);
+            this.Controls.Add(this.bt_IP);
             this.Controls.Add(this.btn_AddProject);
             this.Controls.Add(this.btn_Record);
             this.Controls.Add(this.comboBox1);
@@ -122,6 +134,7 @@
         private System.Windows.Forms.Button btn_Evaluate;
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
+        private System.Windows.Forms.Button bt_IP;
     }
 }
 

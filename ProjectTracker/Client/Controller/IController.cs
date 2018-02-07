@@ -14,6 +14,7 @@ namespace Client.Controller
         void StopStopwatch();
         void CommitTime();
         void Evaluate();
+        void ChangeIP();
         void SetCurrentProject(Project project);
         List<Project> GetProjects();
     }

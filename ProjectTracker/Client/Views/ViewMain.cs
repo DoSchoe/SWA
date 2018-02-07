@@ -97,5 +97,10 @@ namespace Client
         {
             btn_AddProject.Enabled = enable;
         }
+
+        private void bt_IP_Click(object sender, EventArgs e)
+        {
+            mController.ChangeIP();
+        }
     }
 }

@@ -25,7 +25,7 @@ namespace Client.Controller
         private ViewAddProject mViewAddProject;
         private ViewEvaluation mViewEvaluation;
         private const int SERVER_PORT = 9050;
-        private const string SERVER_IP = "127.0.0.1";
+        private string SERVER_IP = "127.0.0.1";
         private const string FILEPATH = @"C:\temp\ProjectTrackerMessages.txt";
         private const int TIMEOUT = 1000; // in ms
         private bool MessageWaiting;
@@ -106,6 +106,15 @@ namespace Client.Controller
             ViewEvaluation formEvaluation = new ViewEvaluation();
             formEvaluation.Show();
             formEvaluation.displayEvaluation(mModelMain.mCurrentProject);
+        }
+
+        public void ChangeIP()
+        {
+            ViewIP changeIP = new ViewIP();
+            if (changeIP.ShowDialog() == DialogResult.OK)
+            {
+                SERVER_IP = changeIP.newIP;
+            }
         }
 
         public void SetCurrentProject(Project project)
