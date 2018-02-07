@@ -247,23 +247,27 @@ namespace Server
             List<int> deletIndex = new List<int>();
             while (Run)
             {
-                timeThreshold = DateTime.Now - offset;
-                for (int i = 0; i < mServer.GetClientList().Count; i++)
+                if (mServer.GetClientList().Any())
                 {
-                    if (mServer.GetClientList()[i].LastHeartBeat < timeThreshold)
+                    timeThreshold = DateTime.Now - offset;
+                    for (int i = 0; i < mServer.GetClientList().Count; i++)
                     {
-                        deletIndex.Add(i);
+                        if (mServer.GetClientList()[i].LastHeartBeat < timeThreshold)
+                        {
+                            deletIndex.Add(i);
+                        }
+                    }
+
+                    if (deletIndex.Count != 0)
+                    {
+                        foreach (int i in deletIndex)
+                        {
+                            mServer.GetClientList().RemoveAt(i);
+                        }
+
                     }
                 }
 
-                if (deletIndex.Count != 0)
-                {
-                    foreach (int i in deletIndex)
-                    {
-                        mServer.GetClientList().RemoveAt(i);
-                    }
-
-                }
                 Thread.Sleep(10 * TIMEOUT);
             }
         }
