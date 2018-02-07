@@ -256,9 +256,13 @@ namespace Server
                     }
                 }
 
-                foreach (int i in deletIndex)
+                if (deletIndex.Count != 0)
                 {
-                    mServer.GetClientList().RemoveAt(i);
+                    foreach (int i in deletIndex)
+                    {
+                        mServer.GetClientList().RemoveAt(i);
+                    }
+
                 }
                 Thread.Sleep(10 * TIMEOUT);
             }
