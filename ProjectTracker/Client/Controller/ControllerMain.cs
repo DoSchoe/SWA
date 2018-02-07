@@ -250,7 +250,7 @@ namespace Client.Controller
                                 }
                                 else
                                 {
-                                    throw new Exception("Wrong message type received");
+                                    throw new Exception("Disconnected");
                                 }
                             }
                         }

@@ -117,7 +117,6 @@ namespace Server
             while (Run)
             {
                 Thread.Sleep(TIMEOUT);
-                Console.WriteLine("WCFThread");
             }
             mValueExchangerServiceHost.Close();
         }
