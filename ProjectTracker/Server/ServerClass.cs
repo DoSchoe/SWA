@@ -12,7 +12,7 @@ namespace Server
     public class ServerClass
     {
         #region Members
-        private string PROJECT_FILE = @"c:\Temp\Projects.txt";
+        private string PROJECT_FILE = Directory.GetCurrentDirectory()+ @"\"+"Projects.txt";
         private int SERVER_PORT = 9050;
         private int HEARTBEAT_DELAY = 5000;
         public const char SEPdata = '#';
